@@ -29,3 +29,12 @@ phi at 0.
 The model uses the full separation `L` with `m_eq`. CLAUDE.md pairs the
 half-separation `l` with `m_eq`. That pairing gives an equilibrium tension of
 3.596e-4 N at 100 m, half of `T_gg`.
+
+## Interactive simulator
+
+`interactive/simulador.html` is a standalone page (open it in a browser) with
+four scenes: deployment with free libration against the radial model,
+inertial view of the spin cost, the thermal transient at the terminator with
+and without winch compensation, and the tension distribution among three
+cables. It ports `src/dumbbell.py` to JavaScript (fixed-step RK4) for
+exploration only. Figures for the report still come from `cases/`.

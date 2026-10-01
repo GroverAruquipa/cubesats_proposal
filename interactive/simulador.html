@@ -1,0 +1,619 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>
+<title>Simulador dumbbell 6U</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: banco de pruebas — barra de pestañas, escena animada a la izquierda, mandos y lecturas a la derecha, gráficas debajo. */
+:root{
+  --bg:#EEF1F4; --panel:#FFFFFF; --fg:#14212B; --muted:#56646F; --line:#CDD5DC; --grid:#E3E8EC;
+  --a:#0A6C94; --b:#B45309; --c3:#6B4FA0; --bad:#B42318; --ok:#1E7A46;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0D141A; --panel:#141F28; --fg:#E2E9EF; --muted:#93A2AE; --line:#2A3946; --grid:#1D2A35;
+  --a:#4FB3DD; --b:#F0A04B; --c3:#B39DEB; --bad:#F2716A; --ok:#5CC98B; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0D141A; --panel:#141F28; --fg:#E2E9EF; --muted:#93A2AE; --line:#2A3946; --grid:#1D2A35;
+  --a:#4FB3DD; --b:#F0A04B; --c3:#B39DEB; --bad:#F2716A; --ok:#5CC98B; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.5;margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:clamp(16px,3vw,32px);padding-block:20px 48px}
+header h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,4vw,40px);line-height:1.05;margin:0;letter-spacing:.005em;text-wrap:balance}
+header p{color:var(--muted);margin:.5rem 0 0;max-width:72ch}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+nav.tabs{display:flex;flex-wrap:wrap;gap:4px;margin:22px 0 0;border-bottom:1px solid var(--line)}
+nav.tabs button{font:600 16px/1 var(--f-display);letter-spacing:.02em;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:12px 14px 10px;cursor:pointer}
+nav.tabs button[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--a)}
+nav.tabs button:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+nav.tabs .num{font-family:var(--f-mono);font-size:12px;margin-right:6px;color:var(--muted)}
+section.scene{padding-top:20px}
+.lede{max-width:80ch;margin:0 0 16px}
+.lede b{font-weight:600}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.stage{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px;min-width:0}
+.stage canvas{display:block;width:100%}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:560px){.pair{grid-template-columns:1fr}}
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.box{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px}
+.box h3{font:600 15px/1.2 var(--f-display);letter-spacing:.04em;text-transform:uppercase;margin:0 0 10px;color:var(--muted)}
+.ctl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin-bottom:10px;align-items:center}
+.ctl label{font-size:13px}
+.ctl output{font-family:var(--f-mono);font-size:12px;font-variant-numeric:tabular-nums;color:var(--fg)}
+.ctl input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--a)}
+.chk{display:flex;gap:8px;align-items:center;font-size:13px;margin-bottom:10px}
+select{width:100%;font:inherit;font-size:14px;padding:7px 8px;background:var(--panel);color:var(--fg);border:1px solid var(--line);border-radius:4px}
+.btnrow{display:flex;flex-wrap:wrap;gap:6px}
+button.b{font:500 13px/1 var(--f-body);padding:8px 11px;border-radius:4px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+button.b.primary{background:var(--fg);color:var(--panel);border-color:var(--fg)}
+.transport{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.transport input[type=range]{flex:1;min-width:140px;accent-color:var(--fg)}
+.clock{font-family:var(--f-mono);font-size:13px;font-variant-numeric:tabular-nums;min-width:15ch}
+table.read{width:100%;border-collapse:collapse;font-size:13px}
+table.read th{font-weight:500;text-align:left;color:var(--muted);padding:3px 0;font-size:12px}
+table.read td{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right;padding:3px 0 3px 8px;white-space:nowrap}
+table.read thead th{text-align:right;font-family:var(--f-display);font-size:13px;letter-spacing:.03em}
+table.read thead th:first-child{text-align:left}
+.sw{display:inline-block;width:14px;height:3px;vertical-align:middle;margin-right:5px;border-radius:2px}
+.charts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:16px}
+.charts.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:900px){.charts,.charts.two{grid-template-columns:minmax(0,1fr)}}
+.chart{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 10px 6px;min-width:0}
+.chart h4{font:600 14px/1.2 var(--f-display);margin:0 0 6px;letter-spacing:.02em}
+.chart canvas{display:block;width:100%;height:190px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted);margin:2px 0 4px}
+.finding{border-left:3px solid var(--fg);padding:8px 0 8px 12px;margin:16px 0 0;max-width:90ch;font-size:14px}
+.finding.warn{border-left-color:var(--bad)}
+.finding.good{border-left-color:var(--ok)}
+.mono{font-family:var(--f-mono);font-size:.92em}
+.pill{display:inline-block;font:500 12px/1 var(--f-mono);padding:4px 7px;border-radius:999px;border:1px solid currentColor}
+.pill.bad{color:var(--bad)} .pill.ok{color:var(--ok)}
+footer{margin-top:36px;color:var(--muted);font-size:13px;max-width:90ch}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">CUBICS 2026 · Stream 1 · 2 × 3U unidos por cables · 550 km</div>
+  <h1>Simulador del dumbbell con cables</h1>
+  <p>Cuatro escenas interactivas del mismo modelo que verifica <span class="mono">tests/test_reference.py</span>: despliegue con libración, la vista inercial, el transitorio térmico en el terminador y la distribución de tensión entre tres cables. Las ecuaciones están portadas de <span class="mono">src/dumbbell.py</span> y las constantes de <span class="mono">src/constants.py</span>.</p>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button role="tab" id="tab-despliegue" aria-selected="true" data-s="despliegue"><span class="num">1</span>Despliegue</button>
+  <button role="tab" id="tab-inercial" aria-selected="false" data-s="inercial"><span class="num">2</span>Vista inercial</button>
+  <button role="tab" id="tab-termico" aria-selected="false" data-s="termico"><span class="num">3</span>Transitorio térmico</button>
+  <button role="tab" id="tab-cables" aria-selected="false" data-s="cables"><span class="num">4</span>Tres cables</button>
+</nav>
+
+<!-- ============ 1 DESPLIEGUE ============ -->
+<section class="scene" id="s-despliegue">
+  <p class="lede">Las mismas condiciones iniciales integradas con dos modelos. A la izquierda la libración está congelada en φ = 0: es el modelo radial de la tabla de referencia, <span class="mono">L = L₀ cosh(√3 n t)</span>. A la derecha la libración es libre, como en las ecuaciones de CLAUDE.md. El término de Coriolis <span class="mono">−2(L′/L)(φ′+n)</span> inclina el cable hacia atrás mientras se alarga.</p>
+  <div class="grid">
+    <div class="stage">
+      <div class="pair">
+        <canvas id="d-cvA" style="height:340px" aria-label="Despliegue, modelo radial"></canvas>
+        <canvas id="d-cvB" style="height:340px" aria-label="Despliegue, modelo completo en el plano"></canvas>
+      </div>
+      <div class="transport">
+        <button class="b primary" id="d-play">Pausa</button>
+        <input type="range" id="d-scrub" min="0" max="1000" value="0" aria-label="Tiempo de misión">
+        <span class="clock" id="d-clock">t = 0 s</span>
+        <select id="d-speed" style="width:auto" aria-label="Velocidad"><option value="0.5">×0,5</option><option value="1" selected>×1</option><option value="2">×2</option><option value="4">×4</option></select>
+      </div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <h3>Ley del cabrestante</h3>
+        <select id="d-preset" aria-label="Caso">
+          <option value="grad">Gradiente solo, T = 0</option>
+          <option value="claude" selected>Caso 1: T = c·L′, c = 4×10⁻³</option>
+          <option value="stacer">Caso 2: igual con stacer de 0,2 m/s</option>
+          <option value="fijo">L_cmd fijo en 100 m, k = 10⁻⁴</option>
+          <option value="exp">L_cmd exponencial, λ = 0,5 n</option>
+        </select>
+        <p style="font-size:12.5px;color:var(--muted);margin:10px 0 12px" class="mono">T = max(0, T₀ + c(L′ − L′cmd) + k(L − Lcmd))</p>
+        <div class="ctl"><label for="d-c">c, amortiguamiento</label><output id="d-c-o"></output><input type="range" id="d-c" min="0" max="100"></div>
+        <div class="ctl"><label for="d-k">k, rigidez de lazo</label><output id="d-k-o"></output><input type="range" id="d-k" min="0" max="100"></div>
+        <div class="ctl"><label for="d-lam">λ / n del perfil Lcmd (0 = fijo)</label><output id="d-lam-o"></output><input type="range" id="d-lam" min="0" max="1" step="0.01"></div>
+        <label class="chk"><input type="checkbox" id="d-ff"> T₀ = 3n²m_eq·Lcmd (anticipación)</label>
+        <div class="ctl" id="d-T0-row"><label for="d-T0">T₀ manual</label><output id="d-T0-o"></output><input type="range" id="d-T0" min="0" max="1.5e-3" step="1e-5"></div>
+        <div class="ctl"><label for="d-v0">Impulso inicial L′(0)</label><output id="d-v0-o"></output><input type="range" id="d-v0" min="0" max="0.3" step="0.005"></div>
+        <div class="ctl"><label for="d-tmax">Duración simulada</label><output id="d-tmax-o"></output><input type="range" id="d-tmax" min="1" max="24" step="0.5"></div>
+      </div>
+      <div class="box">
+        <h3>Lecturas en el instante</h3>
+        <table class="read" id="d-read"></table>
+      </div>
+    </div>
+  </div>
+  <div class="charts">
+    <div class="chart"><h4>Separación L [m]</h4><div class="legend"><span><i class="sw" style="background:var(--a)"></i>radial (φ ≡ 0)</span><span><i class="sw" style="background:var(--b)"></i>completo</span></div><canvas id="d-chL"></canvas></div>
+    <div class="chart"><h4>Libración φ [°]</h4><div class="legend"><span><i class="sw" style="background:var(--a)"></i>radial</span><span><i class="sw" style="background:var(--b)"></i>completo</span><span><i class="sw" style="background:var(--muted)"></i>φ* estacionario</span></div><canvas id="d-chP"></canvas></div>
+    <div class="chart"><h4>Tensión total T [mN]</h4><div class="legend"><span><i class="sw" style="background:var(--a)"></i>radial</span><span><i class="sw" style="background:var(--b)"></i>completo</span><span>▾ cable se afloja</span></div><canvas id="d-chT"></canvas></div>
+  </div>
+  <div class="finding warn" id="d-finding"></div>
+</section>
+
+<!-- ============ 2 INERCIAL ============ -->
+<section class="scene" id="s-inercial" hidden>
+  <p class="lede">El dumbbell visto desde un marco inercial. Alineado con la vertical local, el sistema gira una vez por órbita, a velocidad <b>n</b>, y el gradiente de gravedad lo sostiene sin coste. Cualquier otra velocidad de giro exige momento angular a las ruedas y un par cíclico para mantenerla uniforme. La tensión que exige cada caso es <span class="mono">T = m_eq L(ω² − n²(1 − 3cos²φ))</span>, con φ = (ω − n)t. Si sale negativa, el cable tendría que empujar.</p>
+  <div class="grid">
+    <div class="stage">
+      <canvas id="i-cv" style="height:420px" aria-label="Vista inercial de la órbita"></canvas>
+      <div class="transport">
+        <button class="b primary" id="i-play">Pausa</button>
+        <span class="clock" id="i-clock"></span>
+      </div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <h3>Giro inercial</h3>
+        <div class="btnrow" style="margin-bottom:12px">
+          <button class="b" data-w="0">ω = 0, fijo</button>
+          <button class="b" data-w="1">ω = n, gradiente</button>
+          <button class="b" data-w="1.7320508">ω = √3 n</button>
+        </div>
+        <div class="ctl"><label for="i-w">ω / n</label><output id="i-w-o"></output><input type="range" id="i-w" min="0" max="3" step="0.01" value="1"></div>
+        <div class="ctl"><label for="i-L">Separación L</label><output id="i-L-o"></output><input type="range" id="i-L" min="10" max="100" step="1" value="100"></div>
+      </div>
+      <div class="box">
+        <h3>Coste del giro</h3>
+        <table class="read" id="i-read"></table>
+      </div>
+    </div>
+  </div>
+  <div class="charts two">
+    <div class="chart"><h4>Tensión necesaria a lo largo de una órbita [mN]</h4><div class="legend"><span><i class="sw" style="background:var(--a)"></i>T requerida</span><span><i class="sw" style="background:var(--muted)"></i>T_gg</span><span><i class="sw" style="background:var(--bad)"></i>T &lt; 0: imposible con cables</span></div><canvas id="i-chT"></canvas></div>
+    <div class="chart"><h4>Par sobre el dumbbell para mantener ω uniforme [mN·m]</h4><div class="legend"><span><i class="sw" style="background:var(--b)"></i>M = 3n²I sinφ cosφ</span><span><i class="sw" style="background:var(--muted)"></i>rueda típica, 1 mN·m</span></div><canvas id="i-chM"></canvas></div>
+  </div>
+  <div class="finding" id="i-finding"></div>
+</section>
+
+<!-- ============ 3 TERMICO ============ -->
+<section class="scene" id="s-termico" hidden>
+  <p class="lede">A 100 m, con el sistema en equilibrio, la longitud natural del cable cambia en δ(t) = δ_max(1 − e^{−(t−20)/τ}) al cruzar el terminador. Con un cable de rigidez EA/L = 31,4 N/m el alargamiento elástico de trabajo es de solo 23 µm, así que unos milímetros de deriva térmica bastan para aflojarlo. Arriba el cabrestante está fijo; abajo regula la tensión con <span class="mono">ℓ′ = v_max · sat(G(T − T_ref)/T_ref)</span>. Los desplazamientos están exagerados en el dibujo y reales en las gráficas.</p>
+  <div class="grid">
+    <div class="stage">
+      <canvas id="t-cv" style="height:300px" aria-label="Transitorio térmico"></canvas>
+      <div class="transport">
+        <button class="b primary" id="t-play">Pausa</button>
+        <input type="range" id="t-scrub" min="0" max="1000" value="0" aria-label="Tiempo">
+        <span class="clock" id="t-clock"></span>
+      </div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <h3>Transitorio y cabrestante</h3>
+        <div class="ctl"><label for="t-d">δ_max, cambio de longitud natural</label><output id="t-d-o"></output><input type="range" id="t-d" min="-0.15" max="0.15" step="0.005" value="0.12"></div>
+        <div class="ctl"><label for="t-tau">τ, constante de tiempo</label><output id="t-tau-o"></output><input type="range" id="t-tau" min="5" max="120" step="1" value="30"></div>
+        <label class="chk"><input type="checkbox" id="t-ks"> Elemento elástico en serie, k_s = 7×10⁻³ N/m</label>
+        <div class="ctl"><label for="t-v">v_max del cabrestante</label><output id="t-v-o"></output><input type="range" id="t-v" min="0.0005" max="0.01" step="0.0005" value="0.004"></div>
+        <div class="ctl"><label for="t-g">Ganancia G</label><output id="t-g-o"></output><input type="range" id="t-g" min="0.5" max="10" step="0.5" value="2"></div>
+      </div>
+      <div class="box">
+        <h3>Resultado en 600 s</h3>
+        <table class="read" id="t-read"></table>
+      </div>
+    </div>
+  </div>
+  <div class="charts two">
+    <div class="chart"><h4>T / T_ref, con T_ref = T_gg(100 m) = 0,719 mN</h4><div class="legend"><span><i class="sw" style="background:var(--b)"></i>cabrestante fijo</span><span><i class="sw" style="background:var(--a)"></i>compensación activa</span></div><canvas id="t-chT"></canvas></div>
+    <div class="chart"><h4>Longitudes respecto al equilibrio [mm]</h4><div class="legend"><span><i class="sw" style="background:var(--muted)"></i>δ térmico</span><span><i class="sw" style="background:var(--b)"></i>ΔL fijo</span><span><i class="sw" style="background:var(--a)"></i>ΔL compensado</span><span><i class="sw" style="background:var(--c3)"></i>Δℓ cabrestante</span></div><canvas id="t-chL"></canvas></div>
+  </div>
+  <div class="finding" id="t-finding"></div>
+</section>
+
+<!-- ============ 4 CABLES ============ -->
+<section class="scene" id="s-cables" hidden>
+  <p class="lede">Tres cables entre dos caras de 10 cm separadas 100 m. Una rotación relativa θ alarga unos cables y acorta otros. La suma de tensiones sigue fijada por el gradiente: no hay autotensión posible entre dos cuerpos unidos solo por cables. Por eso el par que puede ejercer el mecanismo está acotado por <span class="mono">T_gg·d_max</span>. El ángulo está exagerado en el dibujo.</p>
+  <div class="grid">
+    <div class="stage">
+      <canvas id="c-cv" style="height:380px" aria-label="Distribución de tensión entre tres cables"></canvas>
+      <div class="transport">
+        <button class="b" id="c-sweep">Barrido de θ</button>
+        <span class="clock" id="c-clock"></span>
+      </div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <h3>Geometría y perturbación</h3>
+        <select id="c-layout" aria-label="Disposición de anclajes" style="margin-bottom:12px">
+          <option value="diag" selected>Central y dos esquinas, d = 70,7 mm</option>
+          <option value="tri">Triángulo, r = 50 mm</option>
+          <option value="line">En línea a lo ancho, ±50 mm</option>
+        </select>
+        <div class="ctl"><label for="c-psi">Dirección de inclinación ψ</label><output id="c-psi-o"></output><input type="range" id="c-psi" min="0" max="180" step="1" value="45"></div>
+        <div class="ctl"><label for="c-th">Rotación relativa θ</label><output id="c-th-o"></output><input type="range" id="c-th" min="0" max="800" step="1" value="60"></div>
+      </div>
+      <div class="box">
+        <h3>Tensiones y par</h3>
+        <table class="read" id="c-read"></table>
+      </div>
+    </div>
+  </div>
+  <div class="charts two">
+    <div class="chart"><h4>Tensión en cada cable [mN]</h4><div class="legend"><span><i class="sw" style="background:var(--a)"></i>cable 1</span><span><i class="sw" style="background:var(--b)"></i>cable 2</span><span><i class="sw" style="background:var(--c3)"></i>cable 3</span></div><canvas id="c-chT"></canvas></div>
+    <div class="chart"><h4>Par restaurador M [µN·m]</h4><div class="legend"><span><i class="sw" style="background:var(--fg)"></i>M(θ)</span><span><i class="sw" style="background:var(--muted)"></i>límite T_gg·d_max</span></div><canvas id="c-chM"></canvas></div>
+  </div>
+  <div class="finding" id="c-finding"></div>
+</section>
+
+<footer>Modelo de dos masas puntuales en órbita circular a 550 km, cable sin masa, m = 4 kg por mitad, m_eq = 2 kg. Integración RK4 de paso fijo en el navegador: 2 s en el despliegue, 2 ms en el transitorio térmico con cable rígido y 20 ms con elemento en serie. Los valores de referencia y las discrepancias con CLAUDE.md están en el README del repositorio <span class="mono">cubesats_proposal</span>.</footer>
+</div>
+
+<script>
+"use strict";
+// ---------- constants (src/constants.py) ----------
+const MU=3.986004418e14, RE=6378.137e3, HALT=550e3, AORB=RE+HALT;
+const N=Math.sqrt(MU/AORB**3), PER=2*Math.PI/N, N2=N*N;
+const MEQ=2.0, ACAB=Math.PI*(0.2e-3)**2/4, EA=100e9*ACAB;
+const TGG=L=>3*N2*MEQ*L;
+const DEG=180/Math.PI;
+
+// ---------- helpers ----------
+const $=id=>document.getElementById(id);
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+let C={};
+function readColors(){const s=getComputedStyle(document.documentElement);for(const k of["bg","panel","fg","muted","line","grid","a","b","c3","bad","ok"])C[k]=s.getPropertyValue("--"+k).trim();C.mono=s.getPropertyValue("--f-mono").trim();C.body=s.getPropertyValue("--f-body").trim();}
+readColors();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{readColors();redrawAll();});
+new MutationObserver(()=>{readColors();redrawAll();}).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+
+const SUP={"-":"⁻","0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹"};
+function sci(x,d=3){
+  if(typeof x!=="number"||!isFinite(x))return"—";if(x===0)return"0";
+  const a=Math.abs(x);
+  if(a>=1e-2&&a<1e4){return dec(x,d);}
+  const e=Math.floor(Math.log10(a));const m=x/10**e;
+  return m.toFixed(d-1).replace(".",",")+"×10"+String(e).split("").map(c=>SUP[c]).join("");
+}
+function dec(x,d=3){if(typeof x!=="number"||!isFinite(x))return"—";if(x===0)return"0";const a=Math.abs(x);const p=Math.max(0,d-1-Math.floor(Math.log10(a)));return x.toFixed(Math.min(p,6)).replace(".",",");}
+function fmtT(t){if(t<120)return dec(t,3)+" s";if(t<7200)return(t/60).toFixed(1).replace(".",",")+" min";return(t/3600).toFixed(2).replace(".",",")+" h";}
+
+function fit(cv){
+  const r=cv.getBoundingClientRect();const d=window.devicePixelRatio||1;
+  const w=Math.max(10,r.width),h=Math.max(10,cv.clientHeight||+cv.getAttribute("height")||200);
+  if(cv.width!==Math.round(w*d)||cv.height!==Math.round(h*d)){cv.width=Math.round(w*d);cv.height=Math.round(h*d);}
+  const g=cv.getContext("2d");g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,w,h);return{g,w,h};
+}
+function niceTicks(lo,hi,n=5){
+  if(!(hi>lo)){hi=lo+1;}const span=hi-lo;const raw=span/n;const p=10**Math.floor(Math.log10(raw));
+  const s=[1,2,2.5,5,10].find(m=>m*p>=raw)*p;const t=[];for(let v=Math.ceil(lo/s-1e-9)*s;v<=hi+1e-9*s;v+=s)t.push(Math.abs(v)<s*1e-9?0:v);return t;
+}
+function tickLabel(v){if(v===0)return"0";const a=Math.abs(v);if(a>=1e4||a<1e-3)return sci(v,2);return String(+v.toPrecision(4)).replace(".",",");}
+
+// Generic chart: xs (array), series [{ys,color,dash,width}], cursorX, marks [{x,color}], hlines [{y,color,dash}], yMin/yMax, xLabel
+function chart(cv,o){
+  const{g,w,h}=fit(cv);const ml=58,mr=10,mt=12,mb=30;const pw=w-ml-mr,ph=h-mt-mb;
+  const xs=o.xs;let x0=o.xMin??xs[0],x1=o.xMax??xs[xs.length-1];
+  let y0=Infinity,y1=-Infinity;
+  for(const s of o.series){for(let i=0;i<s.ys.length;i++){const v=s.ys[i];if(isFinite(v)){if(v<y0)y0=v;if(v>y1)y1=v;}}}
+  for(const hl of(o.hlines||[])){if(hl.fit!==false){y0=Math.min(y0,hl.y);y1=Math.max(y1,hl.y);}}
+  if(o.yMin!==undefined)y0=o.yMin;if(o.yMax!==undefined)y1=o.yMax;
+  if(!isFinite(y0)){y0=0;y1=1;}if(y1-y0<1e-12){y1=y0+Math.max(1e-9,Math.abs(y0)*0.1||1);}
+  const pad=(y1-y0)*0.06;if(o.yMin===undefined)y0-=pad;if(o.yMax===undefined)y1+=pad;
+  const X=x=>ml+(x-x0)/(x1-x0)*pw, Y=y=>mt+(1-(y-y0)/(y1-y0))*ph;
+  g.font="11px "+C.mono;g.textBaseline="middle";
+  const yt=niceTicks(y0,y1,4);g.strokeStyle=C.grid;g.lineWidth=1;g.fillStyle=C.muted;g.textAlign="right";
+  for(const v of yt){const yy=Math.round(Y(v))+.5;g.beginPath();g.moveTo(ml,yy);g.lineTo(ml+pw,yy);g.stroke();g.fillText(tickLabel(v),ml-6,yy);}
+  const xt=niceTicks(x0,x1,5);g.textAlign="center";g.textBaseline="top";
+  for(const v of xt){const xx=Math.round(X(v))+.5;g.beginPath();g.moveTo(xx,mt);g.lineTo(xx,mt+ph);g.stroke();g.fillText(tickLabel(v),xx,mt+ph+5);}
+  g.strokeStyle=C.line;g.strokeRect(ml+.5,mt+.5,pw,ph);
+  if(o.xLabel){g.textAlign="right";g.fillText(o.xLabel,ml+pw,mt+ph+17);}
+  g.save();g.beginPath();g.rect(ml,mt,pw,ph);g.clip();
+  for(const hl of(o.hlines||[])){g.strokeStyle=hl.color;g.lineWidth=1;g.setLineDash(hl.dash||[4,4]);g.beginPath();g.moveTo(ml,Y(hl.y));g.lineTo(ml+pw,Y(hl.y));g.stroke();}
+  g.setLineDash([]);
+  for(const s of o.series){
+    g.strokeStyle=s.color;g.lineWidth=s.width||1.8;g.setLineDash(s.dash||[]);g.beginPath();
+    const n=s.ys.length;const stride=Math.max(1,Math.floor(n/(pw*2)));let pen=false;
+    for(let i=0;i<n;i+=stride){const v=s.ys[i];const xv=(s.xs||xs)[i];if(!isFinite(v)){pen=false;continue;}const px=X(xv),py=Y(v);if(pen)g.lineTo(px,py);else{g.moveTo(px,py);pen=true;}}
+    g.stroke();
+  }
+  g.setLineDash([]);
+  if(o.fillNeg){g.fillStyle=o.fillNeg;g.globalAlpha=.16;g.fillRect(ml,Y(0),pw,mt+ph-Y(0));g.globalAlpha=1;}
+  for(const m of(o.marks||[])){const xx=X(m.x);g.fillStyle=m.color;g.beginPath();g.moveTo(xx-4,mt+1);g.lineTo(xx+4,mt+1);g.lineTo(xx,mt+8);g.closePath();g.fill();}
+  if(o.cursorX!==undefined){const xx=X(o.cursorX);g.strokeStyle=C.fg;g.globalAlpha=.55;g.lineWidth=1;g.beginPath();g.moveTo(xx,mt);g.lineTo(xx,mt+ph);g.stroke();g.globalAlpha=1;
+    for(const s of o.series){if(s.noDot)continue;const arrX=s.xs||xs;const i=Math.min(arrX.length-1,Math.max(0,lowerIdx(arrX,o.cursorX)));const v=s.ys[i];if(isFinite(v)){g.fillStyle=s.color;g.beginPath();g.arc(xx,Y(v),3.2,0,7);g.fill();}}}
+  g.restore();
+}
+function lowerIdx(a,x){let lo=0,hi=a.length-1;if(x<=a[0])return 0;if(x>=a[hi])return hi;while(hi-lo>1){const m=(lo+hi)>>1;if(a[m]<=x)lo=m;else hi=m;}return lo;}
+
+// log slider mapping: s=0 -> 0, else 10^(e0 + (e1-e0)(s-1)/99)
+const logMap=(s,e0,e1)=>s<=0?0:10**(e0+(e1-e0)*(s-1)/99);
+const logInv=(v,e0,e1)=>v<=0?0:Math.round(1+99*(Math.log10(v)-e0)/(e1-e0));
+
+// ================= SCENE 1: DEPLOYMENT =================
+const D={p:{},runs:null,t:0,playing:!reduce,dt:2};
+const PRESETS={
+  grad:{T0:0,c:0,k:0,lam:0,ff:false,v0:0,tmax:24},
+  claude:{T0:0,c:4e-3,k:0,lam:0,ff:false,v0:0,tmax:6},
+  stacer:{T0:0,c:4e-3,k:0,lam:0,ff:false,v0:0.2,tmax:6},
+  fijo:{T0:0,c:3e-2,k:1e-4,lam:0,ff:true,v0:0,tmax:8},
+  exp:{T0:0,c:3e-2,k:1e-4,lam:0.5,ff:true,v0:0,tmax:6},
+};
+function simDeploy(p,radial){
+  const dt=D.dt,L0=0.2,Lf=100,steps=Math.ceil(p.tmax*3600/dt),lam=p.lam*N;
+  const t=new Float64Array(steps+1),L=new Float64Array(steps+1),Ld=new Float64Array(steps+1),ph=new Float64Array(steps+1),T=new Float64Array(steps+1);
+  const lc=tt=>{if(lam<=0)return[Lf,0];const x=L0*Math.exp(lam*tt);return x<Lf?[x,lam*x]:[Lf,0];};
+  const raw=(tt,y)=>{const[c,cd]=lc(tt);return(p.ff?3*N2*MEQ*c:p.T0)+p.c*(y[1]-cd)+p.k*(y[0]-c);};
+  const f=(tt,y)=>{const Tn=Math.max(0,raw(tt,y));
+    if(radial)return[y[1],3*N2*y[0]-Tn/MEQ,0,0];
+    const w=y[3]+N,cp=Math.cos(y[2]);
+    return[y[1],y[0]*(w*w-N2*(1-3*cp*cp))-Tn/MEQ,y[3],-2*(y[1]/y[0])*w-3*N2*Math.sin(y[2])*cp];};
+  let y=[L0,p.v0,0,0];const slack=[];let prev=raw(0,y);
+  t[0]=0;L[0]=y[0];Ld[0]=y[1];ph[0]=0;T[0]=Math.max(0,prev);let end=steps;
+  for(let i=1;i<=steps;i++){
+    const tt=(i-1)*dt;
+    const k1=f(tt,y),y2=y.map((v,j)=>v+dt/2*k1[j]),k2=f(tt+dt/2,y2),y3=y.map((v,j)=>v+dt/2*k2[j]),k3=f(tt+dt/2,y3),y4=y.map((v,j)=>v+dt*k3[j]),k4=f(tt+dt,y4);
+    y=y.map((v,j)=>v+dt/6*(k1[j]+2*k2[j]+2*k3[j]+k4[j]));
+    t[i]=i*dt;
+    if(!(y[0]>0.01)||!(y[0]<150)||!isFinite(y[0])){end=i;for(let j=i;j<=steps;j++){t[j]=j*dt;L[j]=NaN;Ld[j]=NaN;ph[j]=NaN;T[j]=NaN;}break;}
+    L[i]=y[0];Ld[i]=y[1];ph[i]=y[2];const r=raw(t[i],y);T[i]=Math.max(0,r);
+    if(prev>0&&r<=0)slack.push(t[i]);prev=r;
+  }
+  let t99=null;for(let i=0;i<=end&&i<L.length;i++){if(L[i]>=99){t99=t[i];break;}}
+  let phmax=0;for(let i=0;i<=steps;i++)if(isFinite(ph[i]))phmax=Math.max(phmax,Math.abs(ph[i]));
+  return{t,L,Ld,ph,T,slack,t99,phmax,collided:end<steps&&!(L[end-1]>100)};
+}
+function dReadParams(){
+  const p=D.p;p.c=logMap(+$("d-c").value,-5,0);p.k=logMap(+$("d-k").value,-7,-2);p.lam=+$("d-lam").value;
+  p.ff=$("d-ff").checked;p.T0=+$("d-T0").value;p.v0=+$("d-v0").value;p.tmax=+$("d-tmax").value;
+  $("d-c-o").textContent=sci(p.c,2)+" N·s/m";$("d-k-o").textContent=sci(p.k,2)+" N/m";
+  $("d-lam-o").textContent=p.lam.toFixed(2).replace(".",",");$("d-T0-o").textContent=sci(p.T0,2)+" N";
+  $("d-v0-o").textContent=dec(p.v0,2)+" m/s";$("d-tmax-o").textContent=String(p.tmax).replace(".",",")+" h";
+  $("d-T0-row").style.opacity=p.ff?.4:1;$("d-T0").disabled=p.ff;
+}
+function dApplyPreset(name){const q=PRESETS[name];
+  $("d-c").value=logInv(q.c,-5,0);$("d-k").value=logInv(q.k,-7,-2);$("d-lam").value=q.lam;$("d-ff").checked=q.ff;$("d-T0").value=q.T0;$("d-v0").value=q.v0;$("d-tmax").value=q.tmax;
+  dRecompute(true);}
+function dRecompute(reset){
+  dReadParams();const frac=D.runs?D.t/(D.runs.A.t[D.runs.A.t.length-1]):0;
+  D.runs={A:simDeploy(D.p,true),B:simDeploy(D.p,false)};
+  const tend=D.runs.A.t[D.runs.A.t.length-1];D.t=reset?0:Math.min(tend,frac*tend);
+  dFinding();dDraw();
+}
+function dFinding(){
+  const{A,B}=D.runs,p=D.p,lam=p.lam;
+  const tA=A.t99!==null?fmtT(A.t99):"no llega",tB=B.t99!==null?fmtT(B.t99):"no llega en "+String(p.tmax).replace(".",",")+" h";
+  let s=`<b>Llegada a 99 m:</b> radial ${tA}, completo ${tB}. <b>Libración máxima</b> en el modelo completo: ${dec(B.phmax*DEG,3)}°. <b>Aflojamientos:</b> radial ${A.slack.length}, completo ${B.slack.length}. `;
+  if(lam>0){const r=4*lam/3;s+=r<1?`Con λ = ${dec(lam,2)} n el ángulo estacionario es φ* = −½ asin(4λ/3n) = ${dec(-0.5*Math.asin(r)*DEG,3)}°. Por encima de λ = 0,75 n no existe ese equilibrio y el cable se tumba.`:`Con λ = ${dec(lam,2)} n > 0,75 n no existe ángulo estacionario: el cable se tumba hacia la horizontal.`;}
+  else s+="Sin perfil de longitud el modelo completo no tiene control de la libración: la velocidad de despliegue la impone el gradiente, crece con L y Coriolis tumba el cable. Prueba el perfil exponencial con λ ≤ 0,75 n.";
+  const el=$("d-finding");el.innerHTML=s;el.className="finding "+(B.t99!==null&&B.phmax*DEG<45?"good":"warn");
+}
+function dIdx(run){const i=Math.floor(D.t/D.dt);return isFinite(i)?Math.max(0,Math.min(run.t.length-1,i)):0;}
+function drawDumbbell(cv,run,col,title){
+  const{g,w,h}=fit(cv);const i=dIdx(run);const L=run.L[i],ph=run.ph[i],T=run.T[i];
+  const cx=w/2,cy=h*0.54;
+  g.fillStyle=C.fg;g.font="600 15px "+getComputedStyle(document.documentElement).getPropertyValue("--f-display");g.textAlign="left";g.textBaseline="top";g.fillText(title,10,8);
+  // local vertical + earth
+  g.strokeStyle=C.line;g.setLineDash([3,4]);g.beginPath();g.moveTo(cx,26);g.lineTo(cx,h-30);g.stroke();g.setLineDash([]);
+  g.fillStyle=C.muted;g.font="11px "+C.mono;g.textAlign="center";g.fillText("↓ Tierra",cx,h-24);g.textAlign="right";g.fillText("vuelo →",w-8,h-24);
+  if(!isFinite(L)){g.textAlign="center";g.fillStyle=C.muted;g.fillText(run.collided?"colisión de las dos mitades":"L > 150 m: fin de la simulación",cx,cy);return;}
+  const half=Math.max(L/2,0.6);const s=Math.min(w*0.42,h*0.36)/half;
+  // trail of upper body
+  g.strokeStyle=col;g.globalAlpha=.25;g.lineWidth=1;g.beginPath();
+  const i0=Math.max(0,i-900);for(let j=i0;j<=i;j+=3){const xx=cx+s*run.L[j]/2*Math.sin(run.ph[j]),yy=cy-s*run.L[j]/2*Math.cos(run.ph[j]);j===i0?g.moveTo(xx,yy):g.lineTo(xx,yy);}g.stroke();g.globalAlpha=1;
+  const ux=Math.sin(ph),uy=Math.cos(ph);const ax=cx+s*L/2*ux,ay=cy-s*L/2*uy,bx=cx-s*L/2*ux,by=cy+s*L/2*uy;
+  if(T>0){g.strokeStyle=col;g.lineWidth=1.5+Math.min(3,1.5*T/TGG(100));g.beginPath();g.moveTo(ax,ay);g.lineTo(bx,by);g.stroke();}
+  else{g.strokeStyle=C.bad;g.lineWidth=1.3;g.setLineDash([5,4]);g.beginPath();g.moveTo(ax,ay);g.quadraticCurveTo(cx+14*uy,cy+14*ux,bx,by);g.stroke();g.setLineDash([]);}
+  // libration arc
+  if(Math.abs(ph)>0.02){g.strokeStyle=C.muted;g.lineWidth=1;g.beginPath();const r=34;g.arc(cx,cy,r,-Math.PI/2,-Math.PI/2+ph,ph<0);g.stroke();g.fillStyle=C.muted;g.textAlign="left";g.fillText("φ",cx+6,cy-r-12);}
+  for(const[x,y,lb]of[[ax,ay,"m₁"],[bx,by,"m₂"]]){g.save();g.translate(x,y);g.rotate(ph);g.fillStyle=C.panel;g.strokeStyle=C.fg;g.lineWidth=1.5;g.fillRect(-8,-8,16,16);g.strokeRect(-8,-8,16,16);g.restore();g.fillStyle=C.fg;g.textAlign="left";g.fillText(lb,x+12,y-6);}
+  g.fillStyle=C.fg;g.beginPath();g.arc(cx,cy,2.5,0,7);g.fill();
+  // scale bar
+  const target=w*0.25/s;const p10=10**Math.floor(Math.log10(target));const bar=[1,2,5,10].map(m=>m*p10).filter(v=>v<=target).pop()||p10;
+  g.strokeStyle=C.fg;g.lineWidth=1.5;g.beginPath();g.moveTo(10,h-12);g.lineTo(10+bar*s,h-12);g.moveTo(10,h-16);g.lineTo(10,h-8);g.moveTo(10+bar*s,h-16);g.lineTo(10+bar*s,h-8);g.stroke();
+  g.fillStyle=C.fg;g.textAlign="left";g.textBaseline="bottom";g.fillText(tickLabel(bar)+" m",10,h-17);
+}
+function dDraw(){
+  const{A,B}=D.runs;
+  drawDumbbell($("d-cvA"),A,C.a,"Radial, φ ≡ 0");drawDumbbell($("d-cvB"),B,C.b,"Completo en el plano");
+  const tend=A.t[A.t.length-1];$("d-scrub").value=Math.round(D.t/tend*1000);$("d-clock").textContent="t = "+fmtT(D.t);
+  const th=A.t.map(v=>v/3600),cur=D.t/3600;
+  chart($("d-chL"),{xs:th,series:[{ys:A.L,color:C.a},{ys:B.L,color:C.b}],cursorX:cur,xLabel:"t [h]",yMin:0});
+  const lam=D.p.lam,phs=lam>0&&4*lam/3<1?-0.5*Math.asin(4*lam/3)*DEG:null;
+  chart($("d-chP"),{xs:th,series:[{ys:A.ph.map(v=>v*DEG),color:C.a},{ys:B.ph.map(v=>v*DEG),color:C.b}],cursorX:cur,xLabel:"t [h]",hlines:phs!==null?[{y:phs,color:C.muted}]:[]});
+  chart($("d-chT"),{xs:th,series:[{ys:A.T.map(v=>v*1e3),color:C.a},{ys:B.T.map(v=>v*1e3),color:C.b}],cursorX:cur,xLabel:"t [h]",yMin:0,
+    marks:[...A.slack.map(x=>({x:x/3600,color:C.a})),...B.slack.map(x=>({x:x/3600,color:C.b}))],hlines:[{y:TGG(100)*1e3,color:C.muted,fit:false}]});
+  const iA=dIdx(A),iB=dIdx(B);const cnt=(r)=>r.slack.filter(x=>x<=D.t).length;
+  const row=(k,a,b)=>`<tr><th>${k}</th><td>${a}</td><td>${b}</td></tr>`;
+  $("d-read").innerHTML=`<thead><tr><th></th><th><i class="sw" style="background:var(--a)"></i>radial</th><th><i class="sw" style="background:var(--b)"></i>completo</th></tr></thead>`+
+    row("L [m]",dec(A.L[iA],4),dec(B.L[iB],4))+row("L′ [m/s]",sci(A.Ld[iA],3),sci(B.Ld[iB],3))+row("φ [°]",dec(A.ph[iA]*DEG,3),dec(B.ph[iB]*DEG,3))+
+    row("T [N]",sci(A.T[iA],3),sci(B.T[iB],3))+row("T_gg(L) [N]",sci(TGG(A.L[iA]),3),sci(TGG(B.L[iB]),3))+row("aflojamientos",cnt(A),cnt(B));
+}
+function dAdvance(dtr){if(!D.playing)return;const tend=D.runs.A.t[D.runs.A.t.length-1];D.t+=dtr*tend/25*(+$("d-speed").value);if(D.t>=tend){D.t=tend;D.playing=false;$("d-play").textContent="Reproducir";}}
+["d-c","d-k","d-lam","d-ff","d-T0","d-v0","d-tmax"].forEach(id=>$(id).addEventListener("input",()=>{dReadParams();clearTimeout(D.tm);D.tm=setTimeout(()=>dRecompute(false),60);}));
+$("d-preset").addEventListener("change",e=>{dApplyPreset(e.target.value);D.playing=!reduce;$("d-play").textContent=D.playing?"Pausa":"Reproducir";});
+$("d-play").addEventListener("click",()=>{const tend=D.runs.A.t[D.runs.A.t.length-1];if(!D.playing&&D.t>=tend)D.t=0;D.playing=!D.playing;$("d-play").textContent=D.playing?"Pausa":"Reproducir";});
+$("d-scrub").addEventListener("input",e=>{const tend=D.runs.A.t[D.runs.A.t.length-1];D.t=+e.target.value/1000*tend;D.playing=false;$("d-play").textContent="Reproducir";dDraw();});
+
+// ================= SCENE 2: INERTIAL =================
+const I={t:0,playing:!reduce};
+function iParams(){const w=+$("i-w").value,L=+$("i-L").value;$("i-w-o").textContent=dec(w,3);$("i-L-o").textContent=L+" m";return{w:w*N,L};}
+const Treq=(w,L,phi)=>MEQ*L*(w*w-N2*(1-3*Math.cos(phi)**2));
+function iDraw(){
+  const{w,L}=iParams();const cv=$("i-cv");const{g,w:W,h:Hh}=fit(cv);
+  const cx=W/2,cy=Hh/2,Rp=Math.min(W,Hh)*0.27,Ro=Math.min(W,Hh)*0.40;
+  g.fillStyle=C.grid;g.strokeStyle=C.line;g.beginPath();g.arc(cx,cy,Rp,0,7);g.fill();g.stroke();
+  g.fillStyle=C.muted;g.font="12px "+C.mono;g.textAlign="center";g.textBaseline="middle";g.fillText("Tierra",cx,cy);
+  g.setLineDash([2,5]);g.beginPath();g.arc(cx,cy,Ro,0,7);g.stroke();g.setLineDash([]);
+  g.textAlign="left";g.textBaseline="top";g.fillText("altura y longitud del cable no están a escala",10,8);
+  const th=N*I.t,al=w*I.t,phi=al-th;const sx=cx+Ro*Math.cos(th),sy=cy-Ro*Math.sin(th);
+  g.strokeStyle=C.line;g.setLineDash([3,4]);g.beginPath();g.moveTo(cx,cy);g.lineTo(cx+(Ro+70)*Math.cos(th),cy-(Ro+70)*Math.sin(th));g.stroke();g.setLineDash([]);
+  // reference ghosts every 1/8 orbit with the same rule, for the inertial pattern
+  for(let k=0;k<8;k++){const tk=k*PER/8;const thk=N*tk,alk=w*tk;const px=cx+Ro*Math.cos(thk),py=cy-Ro*Math.sin(thk);const hl=26;
+    g.strokeStyle=C.muted;g.globalAlpha=.35;g.lineWidth=1.2;g.beginPath();g.moveTo(px-hl*Math.cos(alk),py+hl*Math.sin(alk));g.lineTo(px+hl*Math.cos(alk),py-hl*Math.sin(alk));g.stroke();g.globalAlpha=1;}
+  const T=Treq(w,L,phi);const hl=40;const ax=sx+hl*Math.cos(al),ay=sy-hl*Math.sin(al),bx=sx-hl*Math.cos(al),by=sy+hl*Math.sin(al);
+  if(T>=0){g.strokeStyle=C.a;g.lineWidth=2.5;g.beginPath();g.moveTo(ax,ay);g.lineTo(bx,by);g.stroke();}
+  else{g.strokeStyle=C.bad;g.lineWidth=1.5;g.setLineDash([5,4]);g.beginPath();g.moveTo(ax,ay);g.quadraticCurveTo(sx+10*Math.sin(al),sy+10*Math.cos(al),bx,by);g.stroke();g.setLineDash([]);}
+  for(const[x,y]of[[ax,ay],[bx,by]]){g.save();g.translate(x,y);g.rotate(-al);g.fillStyle=C.panel;g.strokeStyle=C.fg;g.lineWidth=1.5;g.fillRect(-7,-7,14,14);g.strokeRect(-7,-7,14,14);g.restore();}
+  $("i-clock").textContent=`t = ${fmtT(I.t%PER)} · órbita de ${dec(PER/60,3)} min · φ = ${dec(((phi%(2*Math.PI))+3*Math.PI)%(2*Math.PI)*DEG-180,3)}°`;
+  // charts over one orbit
+  const n=361,ts=new Float64Array(n),Ts=new Float64Array(n),Ms=new Float64Array(n);const Iner=MEQ*L*L;
+  let Tmin=Infinity,Tmax=-Infinity,Mmax=0;
+  for(let j=0;j<n;j++){const tt=j/(n-1)*PER;ts[j]=tt/60;const ph=(w-N)*tt;Ts[j]=Treq(w,L,ph)*1e3;Ms[j]=3*N2*Iner*Math.sin(ph)*Math.cos(ph)*1e3;Tmin=Math.min(Tmin,Ts[j]);Tmax=Math.max(Tmax,Ts[j]);Mmax=Math.max(Mmax,Math.abs(Ms[j]));}
+  const cur=(I.t%PER)/60;
+  chart($("i-chT"),{xs:ts,series:[{ys:Ts,color:C.a}],cursorX:cur,xLabel:"t [min]",hlines:[{y:0,color:C.bad,dash:[]},{y:TGG(L)*1e3,color:C.muted}],fillNeg:Tmin<0?C.bad:null});
+  chart($("i-chM"),{xs:ts,series:[{ys:Ms,color:C.b}],cursorX:cur,xLabel:"t [min]",hlines:[{y:1,color:C.muted},{y:-1,color:C.muted}]});
+  const Hin=Iner*w,Hw=Iner*Math.abs(w-N);
+  const row=(k,v)=>`<tr><th>${k}</th><td>${v}</td></tr>`;
+  $("i-read").innerHTML=row("I = m_eq L²",sci(Iner,3)+" kg·m²")+row("H inercial = Iω",sci(Hin,3)+" N·m·s")+row("H a ruedas = I|ω − n|",sci(Hw,3)+" N·m·s")+
+    row("frente a 4 ruedas, 0,4 N·m·s",Hw>0?"×"+dec(Hw/0.4,3):"gratis")+row("T mín / máx",sci(Tmin/1e3,3)+" / "+sci(Tmax/1e3,3)+" N")+row("par cíclico máx",sci(Mmax/1e3,3)+" N·m");
+  const wn=w/N;let s;
+  if(Math.abs(wn-1)<0.005)s=`<b>ω = n.</b> El dumbbell sigue la vertical local, φ = 0 siempre, T = 3n²m_eq L = ${sci(TGG(L),3)} N constante. No hace falta momento angular de las ruedas ni par: es la única configuración que da tensión gratis.`;
+  else if(Tmin<0)s=`<b>El cable se afloja</b> durante parte de la órbita (T requerida negativa hasta ${sci(Tmin/1e3,3)} N). Con el dumbbell fijo en el espacio, o girando despacio, la tensión cambia de signo cuando |φ| > 54,7°.`;
+  else s=`<b>Tensión siempre positiva, pero cara:</b> mantener ω = ${dec(wn,3)} n exige ${sci(Hw,3)} N·m·s en las ruedas, ${dec(Hw/0.4,3)} veces lo que almacenan cuatro ruedas de gama alta, y un par cíclico de hasta ${sci(Mmax/1e3,3)} N·m, ${dec(Mmax,3)} veces el par de una rueda.`;
+  const el=$("i-finding");el.innerHTML=s;el.className="finding "+(Math.abs(wn-1)<0.005?"good":"warn");
+}
+function iAdvance(dtr){if(I.playing)I.t+=dtr*PER/14;}
+$("i-play").addEventListener("click",()=>{I.playing=!I.playing;$("i-play").textContent=I.playing?"Pausa":"Reproducir";});
+["i-w","i-L"].forEach(id=>$(id).addEventListener("input",iDraw));
+document.querySelectorAll("[data-w]").forEach(b=>b.addEventListener("click",()=>{$("i-w").value=b.dataset.w;iDraw();}));
+
+// ================= SCENE 3: THERMAL =================
+const TH={t:0,playing:!reduce,tmax:600,runs:null};
+const LT=100,TREF=TGG(LT),KS=7e-3,ZETA=0.05;
+function simThermal(q,comp){
+  const kc=EA/LT,ke=q.ks?1/(1/kc+1/KS):kc,cm=2*ZETA*Math.sqrt(ke*MEQ);
+  const dt=q.ks?0.02:0.002,steps=Math.round(TH.tmax/dt),every=Math.round(0.1/dt),ns=Math.floor(steps/every)+1;
+  const t=new Float64Array(ns),dL=new Float64Array(ns),dl=new Float64Array(ns),de=new Float64Array(ns),Tr=new Float64Array(ns),sl=new Float64Array(ns);
+  const l0=LT-TREF/ke;
+  const del=tt=>tt>20?q.d*(1-Math.exp(-(tt-20)/q.tau)):0;
+  const ten=(tt,x,v,l)=>ke*(x-l-del(tt))+cm*v;
+  const f=(tt,x,v,l)=>{const T=Math.max(0,ten(tt,x,v,l));const ld=comp?q.v*Math.max(-1,Math.min(1,q.G*(T-TREF)/TREF)):0;return[v,3*N2*x-T/MEQ,ld];};
+  let x=LT,v=0,l=l0,tt=0,prevOn=true,nsl=0,tsl=0,Tmax=0,k=0;const slackT=[];
+  const store=()=>{const T=Math.max(0,ten(tt,x,v,l));t[k]=tt;dL[k]=(x-LT)*1e3;dl[k]=(l-l0)*1e3;de[k]=del(tt)*1e3;Tr[k]=T/TREF;sl[k]=(l+del(tt))-x;k++;};
+  store();
+  for(let i=1;i<=steps;i++){
+    const a=f(tt,x,v,l),b=f(tt+dt/2,x+dt/2*a[0],v+dt/2*a[1],l+dt/2*a[2]),c=f(tt+dt/2,x+dt/2*b[0],v+dt/2*b[1],l+dt/2*b[2]),d=f(tt+dt,x+dt*c[0],v+dt*c[1],l+dt*c[2]);
+    x+=dt/6*(a[0]+2*b[0]+2*c[0]+d[0]);v+=dt/6*(a[1]+2*b[1]+2*c[1]+d[1]);l+=dt/6*(a[2]+2*b[2]+2*c[2]+d[2]);tt=i*dt;
+    const T=ten(tt,x,v,l);const on=T>0;if(prevOn&&!on){nsl++;slackT.push(tt);}if(!on)tsl+=dt;prevOn=on;Tmax=Math.max(Tmax,T);
+    if(i%every===0&&k<ns)store();
+  }
+  return{t,dL,dl,de,Tr,sl,nsl,tsl,Tmax,slackT,ke};
+}
+function tParams(){const q={d:+$("t-d").value,tau:+$("t-tau").value,ks:$("t-ks").checked,v:+$("t-v").value,G:+$("t-g").value};
+  $("t-d-o").textContent=(q.d>=0?"+":"")+dec(q.d*1e3,3).replace(/^0$/,"0")+" mm";$("t-tau-o").textContent=q.tau+" s";$("t-v-o").textContent=dec(q.v*1e3,2)+" mm/s";$("t-g-o").textContent=dec(q.G,2);return q;}
+function tRecompute(){const q=tParams();TH.runs={F:simThermal(q,false),A:simThermal(q,true)};tFinding();tDraw();}
+function tIdx(r){return Math.min(r.t.length-1,Math.round(TH.t/0.1));}
+function drawStrip(g,y0,hh,W,r,col,label){
+  const i=tIdx(r);const left=70,right=W-30;const base=left+(right-left)*0.55;const scl=(right-left)*0.3/150; // px per mm
+  const xb=base+r.dL[i]*scl;
+  g.fillStyle=C.fg;g.font="600 14px "+getComputedStyle(document.documentElement).getPropertyValue("--f-display");g.textAlign="left";g.textBaseline="top";g.fillText(label,10,y0+4);
+  const cy=y0+hh*0.58;
+  // winch body
+  g.fillStyle=C.panel;g.strokeStyle=C.fg;g.lineWidth=1.5;g.fillRect(16,cy-18,36,36);g.strokeRect(16,cy-18,36,36);
+  const ang=-r.dl[i]/1e3/0.005;g.beginPath();g.arc(34,cy,11,0,7);g.stroke();g.beginPath();g.moveTo(34,cy);g.lineTo(34+11*Math.cos(ang),cy+11*Math.sin(ang));g.stroke();
+  // reference mark of equilibrium position
+  g.strokeStyle=C.line;g.setLineDash([3,3]);g.beginPath();g.moveTo(base,cy-26);g.lineTo(base,cy+26);g.stroke();g.setLineDash([]);
+  g.fillStyle=C.muted;g.font="10px "+C.mono;g.textAlign="center";g.fillText("equilibrio",base,cy+28);
+  const T=r.Tr[i];const x1=52,x2=xb-12;
+  if(T>0){g.strokeStyle=col;g.lineWidth=Math.min(6,1.2+1.4*Math.log10(1+9*T));g.beginPath();g.moveTo(x1,cy);g.lineTo(x2,cy);g.stroke();}
+  else{const amp=Math.min(22,4+Math.max(0,r.sl[i])*1e3*0.8);g.strokeStyle=C.bad;g.lineWidth=1.4;g.beginPath();for(let k=0;k<=80;k++){const xx=x1+(x2-x1)*k/80;const yy=cy+amp*Math.sin(k/80*Math.PI*5)*Math.sin(k/80*Math.PI);k?g.lineTo(xx,yy):g.moveTo(xx,yy);}g.stroke();}
+  g.fillStyle=C.panel;g.strokeStyle=C.fg;g.lineWidth=1.5;g.fillRect(xb-12,cy-14,24,28);g.strokeRect(xb-12,cy-14,24,28);
+  g.fillStyle=T>0?C.fg:C.bad;g.font="12px "+C.mono;g.textAlign="right";g.textBaseline="top";
+  g.fillText(T>0?`T/T_ref = ${dec(T,3)}`:"cable flojo",W-10,y0+4);
+}
+function tDraw(){
+  const{F,A}=TH.runs;const cv=$("t-cv");const{g,w,h}=fit(cv);
+  drawStrip(g,0,h/2,w,F,C.b,"Cabrestante fijo");g.strokeStyle=C.line;g.beginPath();g.moveTo(0,h/2);g.lineTo(w,h/2);g.stroke();
+  drawStrip(g,h/2,h/2,w,A,C.a,"Compensación activa");
+  $("t-clock").textContent="t = "+dec(TH.t,4)+" s";$("t-scrub").value=Math.round(TH.t/TH.tmax*1000);
+  const tmax=Math.max(...F.Tr,...A.Tr);
+  chart($("t-chT"),{xs:F.t,series:[{ys:F.Tr,color:C.b,width:1.3},{ys:A.Tr,color:C.a}],cursorX:TH.t,xLabel:"t [s]",yMin:0,yMax:Math.max(2,tmax*1.05),hlines:[{y:1,color:C.muted}],
+    marks:[...F.slackT.map(x=>({x,color:C.b})),...A.slackT.map(x=>({x,color:C.a}))]});
+  chart($("t-chL"),{xs:F.t,series:[{ys:F.de,color:C.muted,dash:[5,4]},{ys:F.dL,color:C.b},{ys:A.dL,color:C.a},{ys:A.dl,color:C.c3}],cursorX:TH.t,xLabel:"t [s]"});
+  const i=tIdx(F);const row=(k,a,b)=>`<tr><th>${k}</th><td>${a}</td><td>${b}</td></tr>`;
+  const cnt=r=>r.slackT.filter(x=>x<=TH.t).length;
+  $("t-read").innerHTML=`<thead><tr><th></th><th><i class="sw" style="background:var(--b)"></i>fijo</th><th><i class="sw" style="background:var(--a)"></i>activo</th></tr></thead>`+
+    row("aflojamientos hasta t",cnt(F),cnt(A))+row("aflojamientos, 600 s",F.nsl,A.nsl)+row("tiempo flojo",dec(F.tsl,3)+" s",dec(A.tsl,3)+" s")+row("T máx / T_ref",dec(F.Tmax/TREF,3),dec(A.Tmax/TREF,3))+
+    row("rigidez efectiva",sci(F.ke,3)+" N/m",sci(A.ke,3)+" N/m")+row("T/T_ref en t",dec(F.Tr[i],3),dec(A.Tr[tIdx(A)],3));
+}
+function tFinding(){const{F,A}=TH.runs;const el=$("t-finding");
+  let s=`<b>Cabrestante fijo:</b> ${F.nsl} aflojamientos, ${dec(F.tsl,3)} s con el cable flojo y picos de ${dec(F.Tmax/TREF,3)} veces la tensión de trabajo al volver a tensarse. <b>Compensación activa:</b> ${A.nsl} aflojamientos, pico de ${dec(A.Tmax/TREF,3)} T_ref. `;
+  const need=Math.abs(+$("t-d").value)/(+$("t-tau").value);
+  s+=`La deriva inicial es δ_max/τ = ${dec(need*1e3,3)} mm/s; el cabrestante debe poder seguirla o el elemento en serie debe absorberla.`;
+  el.innerHTML=s;el.className="finding "+(A.nsl===0?"good":"warn");}
+function tAdvance(dtr){if(!TH.playing)return;TH.t+=dtr*20;if(TH.t>=TH.tmax){TH.t=TH.tmax;TH.playing=false;$("t-play").textContent="Reproducir";}}
+["t-d","t-tau","t-ks","t-v","t-g"].forEach(id=>$(id).addEventListener("input",()=>{tParams();clearTimeout(TH.tm);TH.tm=setTimeout(tRecompute,80);}));
+$("t-play").addEventListener("click",()=>{if(!TH.playing&&TH.t>=TH.tmax)TH.t=0;TH.playing=!TH.playing;$("t-play").textContent=TH.playing?"Pausa":"Reproducir";});
+$("t-scrub").addEventListener("input",e=>{TH.t=+e.target.value/1000*TH.tmax;TH.playing=false;$("t-play").textContent="Reproducir";tDraw();});
+
+// ================= SCENE 4: THREE CABLES =================
+const CB={sweep:false,dir:1};const LC=100,KC=EA/LC,TG=TGG(LC);
+const LAYOUTS={diag:[[-0.05,-0.05],[0,0],[0.05,0.05]],tri:[0,1,2].map(i=>[0.05*Math.cos(Math.PI/2+i*2*Math.PI/3),0.05*Math.sin(Math.PI/2+i*2*Math.PI/3)]),line:[[-0.05,0],[0,0],[0.05,0]]};
+function levers(lay,psi){const nx=Math.cos(psi),ny=Math.sin(psi);return LAYOUTS[lay].map(([x,y])=>x*nx+y*ny);}
+// Sum of tensions fixed by the gradient: find s with sum max(0,k(s + l_i th)) = T_gg
+function tensions(lv,th){let lo=-1-0.1*Math.abs(th),hi=1;const F=s=>lv.reduce((a,l)=>a+Math.max(0,KC*(s+l*th)),0)-TG;
+  for(let i=0;i<200;i++){const m=(lo+hi)/2;F(m)>0?hi=m:lo=m;}const s=(lo+hi)/2;return lv.map(l=>Math.max(0,KC*(s+l*th)));}
+function thSlack(lv){let lo=0,hi=0.1;const g=th=>Math.min(...tensions(lv,th));if(g(hi)>0)return Infinity;for(let i=0;i<100;i++){const m=(lo+hi)/2;g(m)>0?lo=m:hi=m;}return(lo+hi)/2;}
+function cParams(){const lay=$("c-layout").value,psi=+$("c-psi").value/DEG,th=+$("c-th").value*1e-6;$("c-psi-o").textContent=$("c-psi").value+"°";$("c-th-o").textContent=$("c-th").value+" µrad = "+dec(th*DEG,3)+"°";return{lay,psi,th};}
+function cDraw(){
+  const{lay,psi,th}=cParams();const lv=levers(lay,psi);const T=tensions(lv,th);const M=T.reduce((a,t,i)=>a+t*lv[i],0);const dmax=Math.max(...lv.map(Math.abs));
+  const ths=thSlack(lv);const cols=[C.a,C.b,C.c3];
+  // 3D view
+  const cv=$("c-cv");const{g,w,h}=fit(cv);const s=Math.min(w,h)*2.6;const cx=w/2,cy=h*0.5;const hgt=h*0.27;
+  const visTh=Math.min(0.45,isFinite(ths)?th/ths*0.12:th*1000);
+  const ax=-Math.sin(psi),ay=Math.cos(psi),nx=Math.cos(psi),ny=Math.sin(psi);
+  const P=(x,y,z)=>[cx+(0.866*x-0.5*y)*s,cy-z+(0.5*x+0.866*y)*0.4*s];
+  const rot=(x,y)=>{const l=x*nx+y*ny;return[x-l*nx*(1-Math.cos(visTh)),y-l*ny*(1-Math.cos(visTh)),-l*Math.sin(visTh)*s];};
+  const face=(pts,z,fill)=>{g.beginPath();pts.forEach((p,i)=>{const q=P(p[0],p[1],(p[2]||0)+z);i?g.lineTo(...q):g.moveTo(...q);});g.closePath();g.fillStyle=fill;g.fill();g.strokeStyle=C.fg;g.lineWidth=1.3;g.stroke();};
+  const sq=[[-0.05,-0.05],[0.05,-0.05],[0.05,0.05],[-0.05,0.05]];
+  face(sq.map(([x,y])=>[...rot(x,y)]),-hgt,C.grid);
+  // rotation axis on lower face
+  g.strokeStyle=C.muted;g.setLineDash([4,4]);g.beginPath();g.moveTo(...P(-0.075*ax,-0.075*ay,-hgt));g.lineTo(...P(0.075*ax,0.075*ay,-hgt));g.stroke();g.setLineDash([]);
+  LAYOUTS[lay].forEach(([x,y],i)=>{const b=rot(x,y);const pa=P(x,y,hgt),pb=P(b[0],b[1],b[2]-hgt);
+    if(T[i]>1e-12){g.strokeStyle=cols[i];g.lineWidth=1+5*T[i]/TG;g.beginPath();g.moveTo(...pa);g.lineTo(...pb);g.stroke();}
+    else{g.strokeStyle=C.bad;g.lineWidth=1.3;g.setLineDash([5,4]);g.beginPath();g.moveTo(...pa);g.quadraticCurveTo((pa[0]+pb[0])/2+22,(pa[1]+pb[1])/2,...pb);g.stroke();g.setLineDash([]);}
+    g.fillStyle=cols[i];g.beginPath();g.arc(...pa,3,0,7);g.fill();g.beginPath();g.arc(...pb,3,0,7);g.fill();
+    g.fillStyle=C.fg;g.font="12px "+C.mono;g.textAlign="left";g.textBaseline="middle";const mid=[(pa[0]+pb[0])/2,(pa[1]+pb[1])/2];g.fillText(String(i+1),mid[0]+8,mid[1]);});
+  face(sq.map(([x,y])=>[x,y,0]),hgt,C.panel);
+  g.fillStyle=C.muted;g.font="11px "+C.mono;g.textAlign="left";g.textBaseline="top";
+  g.fillText("cara de A (100 m más arriba, distancia acortada)",10,8);g.textBaseline="bottom";g.fillText("cara de B, girada θ (exagerado) sobre el eje discontinuo",10,h-8);
+  $("c-clock").textContent=`θ / θ_flojo = ${isFinite(ths)?dec(th/ths,3):"—"}`;
+  // charts vs theta
+  const thMax=(isFinite(ths)?ths*4:8e-4);const n=241,xs=new Float64Array(n),Ts=[0,1,2].map(()=>new Float64Array(n)),Ms=new Float64Array(n);
+  for(let j=0;j<n;j++){const t=j/(n-1)*thMax;xs[j]=t*1e6;const tt=tensions(lv,t);tt.forEach((v,i)=>Ts[i][j]=v*1e3);Ms[j]=tt.reduce((a,v,i)=>a+v*lv[i],0)*1e6;}
+  chart($("c-chT"),{xs,series:Ts.map((ys,i)=>({ys,color:cols[i]})),cursorX:th*1e6,xLabel:"θ [µrad]",yMin:0,hlines:[{y:TG/3*1e3,color:C.muted}]});
+  chart($("c-chM"),{xs,series:[{ys:Ms,color:C.fg}],cursorX:th*1e6,xLabel:"θ [µrad]",yMin:Math.min(0,...Ms),hlines:[{y:TG*dmax*1e6,color:C.muted},{y:-TG*dmax*1e6,color:C.muted,fit:false}]});
+  const Ktheta=KC*lv.reduce((a,l)=>a+l*l,0);
+  const row=(k,v)=>`<tr><th>${k}</th><td>${v}</td></tr>`;
+  $("c-read").innerHTML=T.map((t,i)=>row(`<i class="sw" style="background:${cols[i]}"></i>cable ${i+1}, brazo ${dec(lv[i]*1e3,3)} mm`,sci(t,3)+" N")).join("")+
+    row("ΣT (fijada por el gradiente)",sci(T.reduce((a,b)=>a+b,0),3)+" N")+row("par M",sci(M,3)+" N·m")+row("rigidez torsional K_θ",sci(Ktheta,3)+" N·m/rad")+
+    row("primer cable flojo en",isFinite(ths)?sci(ths,3)+" rad = "+dec(ths*DEG,2)+"°":"nunca")+row("límite T_gg·d_max",sci(TG*dmax,3)+" N·m")+row("frente a una rueda, 1 mN·m",dec(TG*dmax/1e-3*100,3)+" %");
+  const el=$("c-finding");
+  el.innerHTML=`El primer cable se afloja con solo <b>${isFinite(ths)?dec(ths*DEG,2)+"°":"—"}</b> de rotación relativa. A partir de ahí la tensión se concentra en el cable de mayor brazo y el par satura en T_gg·d_max = ${sci(TG*dmax,3)} N·m, el ${dec(TG*dmax/1e-3*100,3)} % de una rueda de reacción. El mecanismo aporta rigidez torsional pasiva y ayuda a las ruedas; no actúa la actitud relativa.`;
+}
+function cAdvance(dtr){if(!CB.sweep)return;const el=$("c-th");let v=+el.value+CB.dir*dtr*160;if(v>=+el.max){v=+el.max;CB.dir=-1;}if(v<=0){v=0;CB.dir=1;}el.value=v;cDraw();}
+["c-layout","c-psi","c-th"].forEach(id=>$(id).addEventListener("input",cDraw));
+$("c-sweep").addEventListener("click",()=>{CB.sweep=!CB.sweep;$("c-sweep").textContent=CB.sweep?"Detener barrido":"Barrido de θ";$("c-sweep").classList.toggle("primary",CB.sweep);});
+
+// ================= tabs + loop =================
+let active="despliegue";
+const draws={despliegue:()=>dDraw(),inercial:()=>iDraw(),termico:()=>tDraw(),cables:()=>cDraw()};
+function show(name){if(!draws[name])name="despliegue";active=name;
+  document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.s===name?"true":"false"));
+  document.querySelectorAll("section.scene").forEach(s=>s.hidden=s.id!=="s-"+name);
+  try{history.replaceState(null,"","#"+name);}catch(e){}
+  if(name==="termico"&&!TH.runs)tRecompute();draws[name]();}
+document.querySelectorAll("nav.tabs button").forEach(b=>b.addEventListener("click",()=>show(b.dataset.s)));
+function redrawAll(){if(D.runs)draws[active]();}
+addEventListener("resize",()=>{clearTimeout(window._rz);window._rz=setTimeout(redrawAll,80);});
+let last=performance.now();
+function loop(now){const dtr=Math.min(0.1,(now-last)/1000);last=now;
+  if(active==="despliegue"&&D.playing){dAdvance(dtr);dDraw();}
+  else if(active==="inercial"&&I.playing){iAdvance(dtr);iDraw();}
+  else if(active==="termico"&&TH.playing){tAdvance(dtr);tDraw();}
+  else if(active==="cables"&&CB.sweep){cAdvance(dtr);}
+  requestAnimationFrame(loop);}
+// init
+if(reduce){["d-play","i-play","t-play"].forEach(id=>$(id).textContent="Reproducir");}
+$("d-preset").value="claude";dApplyPreset("claude");
+const h0=(location.hash||"").slice(1);show(draws[h0]?h0:"despliegue");
+requestAnimationFrame(loop);
+</script>
+</body></html>
