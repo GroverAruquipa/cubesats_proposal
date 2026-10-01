@@ -33,8 +33,8 @@ half-separation `l` with `m_eq`. That pairing gives an equilibrium tension of
 ## Interactive simulator
 
 `interactive/simulador.html` is a standalone page (open it in a browser) with
-four scenes: deployment with free libration against the radial model,
+five scenes: deployment with free libration against the radial model,
 inertial view of the spin cost, the thermal transient at the terminator with
 and without winch compensation, and the tension distribution among three
-cables. It ports `src/dumbbell.py` to JavaScript (fixed-step RK4) for
+cables, and what the two nadir cameras see (the upper camera images the lower half). It ports `src/dumbbell.py` to JavaScript (fixed-step RK4) for
 exploration only. Figures for the report still come from `cases/`.

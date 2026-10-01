@@ -79,7 +79,7 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;max-width:90ch}
 <header>
   <div class="eyebrow">CUBICS 2026 · Stream 1 · 2 × 3U unidos por cables · 550 km</div>
   <h1>Simulador del dumbbell con cables</h1>
-  <p>Cuatro escenas interactivas del mismo modelo que verifica <span class="mono">tests/test_reference.py</span>: despliegue con libración, la vista inercial, el transitorio térmico en el terminador y la distribución de tensión entre tres cables. Las ecuaciones están portadas de <span class="mono">src/dumbbell.py</span> y las constantes de <span class="mono">src/constants.py</span>.</p>
+  <p>Cinco escenas interactivas del mismo modelo que verifica <span class="mono">tests/test_reference.py</span>: despliegue con libración, la vista inercial, el transitorio térmico en el terminador, la distribución de tensión entre tres cables y lo que ven las dos cámaras. Las ecuaciones están portadas de <span class="mono">src/dumbbell.py</span> y las constantes de <span class="mono">src/constants.py</span>.</p>
 </header>
 
 <nav class="tabs" role="tablist">
@@ -87,6 +87,7 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;max-width:90ch}
   <button role="tab" id="tab-inercial" aria-selected="false" data-s="inercial"><span class="num">2</span>Vista inercial</button>
   <button role="tab" id="tab-termico" aria-selected="false" data-s="termico"><span class="num">3</span>Transitorio térmico</button>
   <button role="tab" id="tab-cables" aria-selected="false" data-s="cables"><span class="num">4</span>Tres cables</button>
+  <button role="tab" id="tab-camaras" aria-selected="false" data-s="camaras"><span class="num">5</span>Cámaras</button>
 </nav>
 
 <!-- ============ 1 DESPLIEGUE ============ -->
@@ -140,7 +141,7 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;max-width:90ch}
 
 <!-- ============ 2 INERCIAL ============ -->
 <section class="scene" id="s-inercial" hidden>
-  <p class="lede">El dumbbell visto desde un marco inercial. Alineado con la vertical local, el sistema gira una vez por órbita, a velocidad <b>n</b>, y el gradiente de gravedad lo sostiene sin coste. Cualquier otra velocidad de giro exige momento angular a las ruedas y un par cíclico para mantenerla uniforme. La tensión que exige cada caso es <span class="mono">T = m_eq L(ω² − n²(1 − 3cos²φ))</span>, con φ = (ω − n)t. Si sale negativa, el cable tendría que empujar.</p>
+  <p class="lede">El dumbbell visto desde un marco inercial. Alineado con la vertical local, el sistema gira una vez por órbita, a velocidad <b>n</b>, y el gradiente de gravedad lo sostiene sin coste. Cualquier otra velocidad de giro exige momento angular a las ruedas y un par cíclico para mantenerla uniforme. La tensión que exige cada caso es <span class="mono">T = m_eq L(ω² − n²(1 − 3cos²φ))</span>, con φ = (ω − n)t. Si sale negativa, el cable tendría que empujar. Las cuñas naranjas son las cámaras, apuntadas al nadir por las ruedas de cada mitad. Con ω = n la cámara superior mira a lo largo del cable hacia la inferior (escena 5).</p>
   <div class="grid">
     <div class="stage">
       <canvas id="i-cv" style="height:420px" aria-label="Vista inercial de la órbita"></canvas>
@@ -240,6 +241,43 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;max-width:90ch}
     <div class="chart"><h4>Par restaurador M [µN·m]</h4><div class="legend"><span><i class="sw" style="background:var(--fg)"></i>M(θ)</span><span><i class="sw" style="background:var(--muted)"></i>límite T_gg·d_max</span></div><canvas id="c-chM"></canvas></div>
   </div>
   <div class="finding" id="c-finding"></div>
+</section>
+
+<!-- ============ 5 CAMARAS ============ -->
+<section class="scene" id="s-camaras" hidden>
+  <p class="lede">Las dos mitades quedan una sobre otra porque solo la alineación con la vertical local da tensión. Esa alineación es un requisito del diseño. Cada mitad apunta su cámara al nadir con sus propias ruedas, así que las dos ven la Tierra. La cámara inferior tiene la vista despejada. <b>La superior mira hacia abajo a lo largo del cable y ve la mitad inferior a 100 m</b>, en el centro de la imagen, con los cables convergiendo hacia ella. La vista lateral exagera los ángulos; la imagen simulada usa los ángulos reales.</p>
+  <div class="grid">
+    <div class="stage">
+      <div class="pair">
+        <canvas id="k-side" style="height:400px" aria-label="Vista lateral de las dos cámaras"></canvas>
+        <div style="min-width:0">
+          <canvas id="k-img" style="height:400px" aria-label="Imagen simulada de la cámara superior"></canvas>
+        </div>
+      </div>
+      <div class="transport">
+        <button class="b primary" id="k-play">Pausa</button>
+        <span class="clock" id="k-clock"></span>
+      </div>
+    </div>
+    <div class="side">
+      <div class="box">
+        <h3>Cámara y geometría</h3>
+        <div class="ctl"><label for="k-sw">Ancho de barrido en tierra</label><output id="k-sw-o"></output><input type="range" id="k-sw" min="1" max="50" step="0.5" value="5"></div>
+        <div class="ctl"><label for="k-tilt">Inclinación de la cámara superior, hacia delante</label><output id="k-tilt-o"></output><input type="range" id="k-tilt" min="0" max="2" step="0.01" value="0"></div>
+        <div class="ctl"><label for="k-amp">Amplitud de libración residual</label><output id="k-amp-o"></output><input type="range" id="k-amp" min="0" max="1" step="0.01" value="0.15"></div>
+        <div class="ctl"><label for="k-L">Separación L</label><output id="k-L-o"></output><input type="range" id="k-L" min="10" max="100" step="1" value="100"></div>
+        <select id="k-orient" aria-label="Orientación de la mitad inferior">
+          <option value="v" selected>Eje largo del 3U a lo largo del cable: cara de 10 × 10 cm</option>
+          <option value="h">Eje largo del 3U horizontal: cara de 10 × 34 cm</option>
+        </select>
+      </div>
+      <div class="box">
+        <h3>Lo que ve la cámara superior</h3>
+        <table class="read" id="k-read"></table>
+      </div>
+    </div>
+  </div>
+  <div class="finding" id="k-finding"></div>
 </section>
 
 <footer>Modelo de dos masas puntuales en órbita circular a 550 km, cable sin masa, m = 4 kg por mitad, m_eq = 2 kg. Integración RK4 de paso fijo en el navegador: 2 s en el despliegue, 2 ms en el transitorio térmico con cable rígido y 20 ms con elemento en serie. Los valores de referencia y las discrepancias con CLAUDE.md están en el README del repositorio <span class="mono">cubesats_proposal</span>.</footer>
@@ -450,6 +488,7 @@ function iDraw(){
   const T=Treq(w,L,phi);const hl=40;const ax=sx+hl*Math.cos(al),ay=sy-hl*Math.sin(al),bx=sx-hl*Math.cos(al),by=sy+hl*Math.sin(al);
   if(T>=0){g.strokeStyle=C.a;g.lineWidth=2.5;g.beginPath();g.moveTo(ax,ay);g.lineTo(bx,by);g.stroke();}
   else{g.strokeStyle=C.bad;g.lineWidth=1.5;g.setLineDash([5,4]);g.beginPath();g.moveTo(ax,ay);g.quadraticCurveTo(sx+10*Math.sin(al),sy+10*Math.cos(al),bx,by);g.stroke();g.setLineDash([]);}
+  for(const[x,y]of[[ax,ay],[bx,by]]){const dn=Math.atan2(cy-y,cx-x);g.fillStyle=C.b;g.globalAlpha=.28;g.beginPath();g.moveTo(x,y);g.lineTo(x+34*Math.cos(dn-0.16),y+34*Math.sin(dn-0.16));g.lineTo(x+34*Math.cos(dn+0.16),y+34*Math.sin(dn+0.16));g.closePath();g.fill();g.globalAlpha=1;}
   for(const[x,y]of[[ax,ay],[bx,by]]){g.save();g.translate(x,y);g.rotate(-al);g.fillStyle=C.panel;g.strokeStyle=C.fg;g.lineWidth=1.5;g.fillRect(-7,-7,14,14);g.strokeRect(-7,-7,14,14);g.restore();}
   $("i-clock").textContent=`t = ${fmtT(I.t%PER)} · órbita de ${dec(PER/60,3)} min · φ = ${dec(((phi%(2*Math.PI))+3*Math.PI)%(2*Math.PI)*DEG-180,3)}°`;
   // charts over one orbit
@@ -592,9 +631,98 @@ function cAdvance(dtr){if(!CB.sweep)return;const el=$("c-th");let v=+el.value+CB
 ["c-layout","c-psi","c-th"].forEach(id=>$(id).addEventListener("input",cDraw));
 $("c-sweep").addEventListener("click",()=>{CB.sweep=!CB.sweep;$("c-sweep").textContent=CB.sweep?"Detener barrido":"Barrido de θ";$("c-sweep").classList.toggle("primary",CB.sweep);});
 
+// ================= SCENE 5: CAMERAS =================
+const K={t:0,ground:0,playing:!reduce,tex:null};
+const GSD=5.0,DCAB=0.2e-3;
+function kTexture(){ // procedural ground image, fixed earthy palette (it is a picture of terrain)
+  const n=256,cv=document.createElement("canvas");cv.width=n;cv.height=n;const g=cv.getContext("2d");const im=g.createImageData(n,n);
+  let seed=7;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+  const grids=[8,16,32,64].map(m=>{const a=[];for(let i=0;i<=m;i++){a.push([]);for(let j=0;j<=m;j++)a[i].push(rnd());}return{m,a};});
+  const val=(x,y)=>{let v=0,amp=0.5;for(const{m,a}of grids){const fx=x*m,fy=y*m,i=Math.floor(fx)%m,j=Math.floor(fy)%m,u=fx-Math.floor(fx),w=fy-Math.floor(fy);
+    const s=t=>t*t*(3-2*t);const a00=a[i][j],a10=a[(i+1)%m][j],a01=a[i][(j+1)%m],a11=a[(i+1)%m][(j+1)%m];
+    v+=amp*((a00*(1-s(u))+a10*s(u))*(1-s(w))+(a01*(1-s(u))+a11*s(u))*s(w));amp*=0.5;}return v/0.9375;};
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){const v=val(x/n,y/n);const k=(y*n+x)*4;
+    let r,gg,b;if(v<0.42){r=46;gg=78;b=104;}else if(v<0.6){const t=(v-0.42)/0.18;r=92+40*t;gg=112+20*t;b=70+10*t;}else{const t=Math.min(1,(v-0.6)/0.3);r=150+60*t;gg=132+50*t;b=96+60*t;}
+    im.data[k]=r;im.data[k+1]=gg;im.data[k+2]=b;im.data[k+3]=255;}
+  g.putImageData(im,0,0);return cv;}
+function kParams(){const q={sw:+$("k-sw").value*1e3,tilt:+$("k-tilt").value/DEG,amp:+$("k-amp").value/DEG,L:+$("k-L").value,orient:$("k-orient").value};
+  $("k-sw-o").textContent=dec(q.sw/1e3,3)+" km";$("k-tilt-o").textContent=dec(q.tilt*DEG,3)+"°";$("k-amp-o").textContent="±"+dec(q.amp*DEG,3)+"°";$("k-L-o").textContent=q.L+" m";
+  q.fov=2*Math.atan(q.sw/2/HALT);q.sa=q.orient==="h"?0.34:0.1;q.sc=0.1;q.Plib=PER/Math.sqrt(3);q.phi=q.amp*Math.sin(2*Math.PI*K.t/q.Plib);return q;}
+function kDraw(){
+  const q=kParams();
+  // ---- simulated image of the upper camera (true angles) ----
+  const cv=$("k-img");const{g,w,h}=fit(cv);const S=Math.min(w,h)-28,ox=(w-S)/2,oy=4;
+  if(!K.tex)K.tex=kTexture();
+  const A2P=a=>S/2+a/q.fov*S; // along-track angle -> px from image top-left (along-track drawn upward = vuelo)
+  g.save();g.beginPath();g.rect(ox,oy,S,S);g.clip();
+  const tile=S*1.6;const off=(K.ground%1)*tile;
+  for(let ix=-1;ix<=1;ix++)for(let iy=-1;iy<=2;iy++)g.drawImage(K.tex,ox+ix*tile,oy+iy*tile+off-tile,tile,tile);
+  const cAng=Math.tan(q.phi)-q.tilt; // angle of lower half from camera boresight, along-track
+  // cables: three anchors on the upper face, r = 50 mm around the camera
+  const anchors=[0,1,2].map(i=>[0.05*Math.cos(Math.PI/2+i*2*Math.PI/3),0.05*Math.sin(Math.PI/2+i*2*Math.PI/3)]);
+  g.strokeStyle="rgba(20,20,20,0.85)";g.lineCap="round";
+  for(const[aa,ac]of anchors){let prev=null;for(let k=0;k<=160;k++){const z=0.3*Math.pow(q.L/0.3,k/160);
+      const pa=aa/z+Math.tan(q.phi)-q.tilt,pc=ac/z;const P=[ox+A2P(pc),oy+S-A2P(pa)];
+      if(prev){g.lineWidth=Math.max(0.6,DCAB/z/q.fov*S);g.beginPath();g.moveTo(...prev);g.lineTo(...P);g.stroke();}prev=P;}}
+  // lower half
+  const hw=q.sc/2/q.L/q.fov*S,hh=q.sa/2/q.L/q.fov*S;const cx=ox+S/2,cy=oy+S-A2P(cAng);
+  g.fillStyle="#2a2f35";g.fillRect(cx-hw,cy-hh,2*hw,2*hh);g.strokeStyle="#c9d1d8";g.lineWidth=1;g.strokeRect(cx-hw,cy-hh,2*hw,2*hh);
+  // crosshair at nadir
+  const ny=oy+S-A2P(-q.tilt);g.strokeStyle="rgba(255,255,255,0.85)";g.setLineDash([4,4]);g.beginPath();g.moveTo(ox+S/2-14,ny);g.lineTo(ox+S/2+14,ny);g.moveTo(ox+S/2,ny-14);g.lineTo(ox+S/2,ny+14);g.stroke();g.setLineDash([]);
+  g.restore();
+  g.strokeStyle=C.fg;g.lineWidth=1;g.strokeRect(ox+.5,oy+.5,S,S);
+  g.fillStyle=C.muted;g.font="11px "+C.mono;g.textAlign="left";g.textBaseline="top";
+  g.fillText(`cámara superior · ${dec(q.sw/1e3,3)} km · ↑ vuelo · + nadir`,ox,oy+S+6);
+  // occlusion fraction
+  const ix0=Math.max(-0.5,(cAng/q.fov)-q.sa/2/q.L/q.fov),ix1=Math.min(0.5,(cAng/q.fov)+q.sa/2/q.L/q.fov);
+  const occA=Math.max(0,ix1-ix0)*Math.min(1,q.sc/q.L/q.fov);
+  // ---- side view (exaggerated angles) ----
+  const sv=$("k-side");const s2=fit(sv);const G=s2.g,W=s2.w,Hh=s2.h;
+  const E=(22/DEG)/q.fov; // exaggeration so the FOV is drawn 22 deg wide
+  const xC=W/2,yU=54,Lpx=Hh*0.42,yG=Hh-36;
+  const vis=a=>Math.atan(Math.tan(a)*E);
+  const xL=xC+Lpx*Math.tan(vis(q.phi)),yL=yU+Lpx;
+  G.fillStyle=C.grid;G.fillRect(0,yG,W,Hh-yG);G.fillStyle=C.muted;G.font="11px "+C.mono;G.textAlign="left";G.textBaseline="top";G.fillText("superficie, 550 km más abajo",8,yG+6);
+  G.textBaseline="top";G.fillText(`ángulos exagerados ×${dec(E,3)}`,8,8);
+  const cone=(x,y,ang,col,alpha)=>{const half=11/DEG;const d=yG-y;G.fillStyle=col;G.globalAlpha=alpha;G.beginPath();G.moveTo(x,y);G.lineTo(x+d*Math.tan(-ang-half)*-1,yG);G.lineTo(x+d*Math.tan(-ang+half)*-1,yG);G.closePath();G.fill();G.globalAlpha=1;};
+  const tv=vis(q.tilt);
+  // upper camera cone, tilted forward (to the right = vuelo)
+  G.fillStyle=C.a;G.globalAlpha=.16;G.beginPath();G.moveTo(xC,yU);G.lineTo(xC+(yG-yU)*Math.tan(tv-11/DEG),yG);G.lineTo(xC+(yG-yU)*Math.tan(tv+11/DEG),yG);G.closePath();G.fill();G.globalAlpha=1;
+  G.fillStyle=C.b;G.globalAlpha=.16;G.beginPath();G.moveTo(xL,yL);G.lineTo(xL+(yG-yL)*Math.tan(-11/DEG),yG);G.lineTo(xL+(yG-yL)*Math.tan(11/DEG),yG);G.closePath();G.fill();G.globalAlpha=1;
+  // shadow of the lower half in the upper camera view
+  const sHalf=Math.atan(Math.tan(q.sa/2/q.L)*E);const a0=Math.max(vis(q.phi)-sHalf,tv-11/DEG),a1=Math.min(vis(q.phi)+sHalf,tv+11/DEG);
+  if(a1>a0){G.fillStyle=C.bad;G.globalAlpha=.28;G.beginPath();G.moveTo(xC,yU);G.lineTo(xC+(yG-yU)*Math.tan(a0),yG);G.lineTo(xC+(yG-yU)*Math.tan(a1),yG);G.closePath();G.fill();G.globalAlpha=1;}
+  G.strokeStyle=C.fg;G.lineWidth=1.3;G.beginPath();G.moveTo(xC,yU);G.lineTo(xL,yL);G.stroke();
+  const boxW=Math.max(10,2*Lpx*Math.tan(sHalf));
+  G.fillStyle=C.panel;G.strokeStyle=C.fg;G.lineWidth=1.5;G.fillRect(xC-9,yU-24,18,24);G.strokeRect(xC-9,yU-24,18,24);G.fillRect(xL-boxW/2,yL,boxW,18);G.strokeRect(xL-boxW/2,yL,boxW,18);
+  G.fillStyle=C.fg;G.textAlign="left";G.textBaseline="middle";G.fillText("superior",xC+14,yU-12);G.fillText("inferior",xL+boxW/2+6,yL+9);
+  G.textAlign="right";G.fillStyle=C.muted;G.fillText("vuelo →",W-8,yU-12);
+  // ---- readouts ----
+  const tmin=q.fov/2+q.sa/2/q.L+q.amp;
+  const row=(k,v)=>`<tr><th>${k}</th><td>${v}</td></tr>`;
+  const inView=occA>0;
+  $("k-read").innerHTML=row("campo de visión",dec(q.fov*DEG,3)+"° = "+dec(q.fov*1e3,3)+" mrad")+row("IFOV con GSD de 5 m",dec(GSD/HALT*1e6,3)+" µrad")+
+    row("mitad inferior, tamaño angular",dec(q.sc/q.L*1e3,3)+" × "+dec(q.sa/q.L*1e3,3)+" mrad")+row("en píxeles de 5 m",Math.round(q.sc/q.L/(GSD/HALT))+" × "+Math.round(q.sa/q.L/(GSD/HALT))+" px")+
+    row("área de imagen tapada ahora",dec(occA*100,3)+" %")+row("φ en este instante",dec(q.phi*DEG,3)+"°")+
+    row("inclinación mínima para despejar",dec(tmin*DEG,3)+"°")+row("cables visibles a partir de",dec(0.05/(q.fov/2),3)+" m de la cámara")+
+    row("B/H estéreo, base radial",q.tilt>0?sci(q.L*Math.sin(q.tilt)/HALT,2):"0 en el nadir");
+  $("k-clock").textContent=`libración ${dec(q.phi*DEG,3)}° · periodo ${dec(q.Plib/60,3)} min · suelo ralentizado`;
+  const el=$("k-finding");
+  el.innerHTML=(inView?`<b>La cámara superior ve la mitad inferior</b>, que ocupa ahora el ${dec(occA*100,3)} % de la imagen, y los tres cables entran en el campo a partir de ${dec(0.05/(q.fov/2),3)} m. `:`<b>La mitad inferior está fuera del campo</b> en este instante. `)+
+    `Con libración residual de ±${dec(q.amp*DEG,3)}° hace falta inclinar la cámara superior al menos ${dec(tmin*DEG,3)}° para que nunca aparezca. Hay tres salidas. `+
+    `<b>(1)</b> Inclinar la cámara superior ese ángulo; la inferior queda en el nadir. `+
+    `<b>(2)</b> Aprovecharlo: con la mitad inferior en la imagen, un píxel equivale a ${dec(GSD/HALT*1e6,3)} µrad de libración, unas ${dec(2*Math.PI/4096/(GSD/HALT),3)} veces mejor que un codificador de 12 bits. Es una medida de la dirección del cable sin hardware adicional. `+
+    `<b>(3)</b> Dejar que solo la cámara inferior haga imagen de la Tierra. `+
+    `En cualquier caso la base entre las dos cámaras es radial, casi paralela a la línea de visión: B/H ≈ ${sci(q.L*Math.sin(Math.max(q.tilt,1/DEG))/HALT,2)} incluso a 1° del nadir, lo que descarta la estereoscopía.`;
+  el.className="finding "+(inView?"warn":"good");
+}
+function kAdvance(dtr){if(!K.playing)return;const q=kParams();K.t+=dtr*q.Plib/10;K.ground+=dtr*0.05;}
+["k-sw","k-tilt","k-amp","k-L","k-orient"].forEach(id=>$(id).addEventListener("input",kDraw));
+$("k-play").addEventListener("click",()=>{K.playing=!K.playing;$("k-play").textContent=K.playing?"Pausa":"Reproducir";});
+
 // ================= tabs + loop =================
 let active="despliegue";
-const draws={despliegue:()=>dDraw(),inercial:()=>iDraw(),termico:()=>tDraw(),cables:()=>cDraw()};
+const draws={despliegue:()=>dDraw(),inercial:()=>iDraw(),termico:()=>tDraw(),cables:()=>cDraw(),camaras:()=>kDraw()};
 function show(name){if(!draws[name])name="despliegue";active=name;
   document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.s===name?"true":"false"));
   document.querySelectorAll("section.scene").forEach(s=>s.hidden=s.id!=="s-"+name);
@@ -609,9 +737,10 @@ function loop(now){const dtr=Math.min(0.1,(now-last)/1000);last=now;
   else if(active==="inercial"&&I.playing){iAdvance(dtr);iDraw();}
   else if(active==="termico"&&TH.playing){tAdvance(dtr);tDraw();}
   else if(active==="cables"&&CB.sweep){cAdvance(dtr);}
+  else if(active==="camaras"&&K.playing){kAdvance(dtr);kDraw();}
   requestAnimationFrame(loop);}
 // init
-if(reduce){["d-play","i-play","t-play"].forEach(id=>$(id).textContent="Reproducir");}
+if(reduce){["d-play","i-play","t-play","k-play"].forEach(id=>$(id).textContent="Reproducir");}
 $("d-preset").value="claude";dApplyPreset("claude");
 const h0=(location.hash||"").slice(1);show(draws[h0]?h0:"despliegue");
 requestAnimationFrame(loop);
