@@ -1,0 +1,13 @@
+{
+  "name": "cubesats-proposal",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "postCreateCommand": "python -m pytest -q",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python", "james-yu.latex-workshop"]
+    }
+  }
+}
