@@ -1,0 +1,57 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>
+<title>Simuladores del 6U con cables</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: índice de tres simuladores en el orden en que conviene verlos, cada uno con lo que muestra y sus cifras clave. */
+:root{--bg:#EDF0F3;--panel:#FFFFFF;--fg:#13202A;--muted:#55636E;--line:#CCD4DB;--accent:#1C7ED6;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;--f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0C1319;--panel:#131D26;--fg:#E3E9EE;--muted:#93A1AD;--line:#283744;--accent:#4DABF7;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0C1319;--panel:#131D26;--fg:#E3E9EE;--muted:#93A1AD;--line:#283744;--accent:#4DABF7;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.55 var(--f-body);margin:0}
+.wrap{max-width:980px;margin:0 auto;padding-inline:clamp(16px,3vw,32px);padding-block:28px 48px}
+.eyebrow{font:500 12px/1.3 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font:700 clamp(28px,4vw,40px)/1.05 var(--f-display);margin:6px 0 8px;text-wrap:balance}
+.sub{color:var(--muted);margin:0 0 24px;max-width:70ch}
+ol{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:14px}
+li{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px 20px;display:grid;grid-template-columns:44px minmax(0,1fr);gap:4px 14px}
+.n{grid-row:1/span 3;font:700 30px/1 var(--f-display);color:var(--accent)}
+h2{font:700 22px/1.15 var(--f-display);margin:0;text-wrap:balance}
+p{margin:4px 0 0}
+.facts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.facts span{font:500 12px/1 var(--f-mono);padding:6px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.go{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-top:12px}
+.go a{font:500 14px/1 var(--f-body);color:var(--panel);background:var(--fg);padding:10px 14px;border-radius:6px;text-decoration:none}
+.go a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.go code{font:12px/1.3 var(--f-mono);color:var(--muted)}
+.note{margin-top:24px;font-size:13.5px;color:var(--muted);max-width:80ch}
+</style>
+<div class="wrap">
+  <div class="eyebrow">CUBICS 2026 · Stream 1 · 6U que se separa en dos 3U unidos por cables</div>
+  <h1>Simuladores del 6U con cables</h1>
+  <p class="sub">Tres simuladores interactivos, en el orden en que conviene verlos para explicar la misión: primero la idea con las cámaras, luego el mecanismo y por último el análisis técnico.</p>
+  <ol>
+    <li><span class="n">1</span>
+      <h2>Cómo fotografían la Tierra las dos mitades</h2>
+      <p>Escena 3D en siete pasos: lanzamiento, separación, por qué el par queda vertical, dónde va cada cámara y hacia dónde apunta. Compara las cámaras al nadir, las franjas contiguas y el estéreo adelante y atrás, con lo que ve cada cámara en vivo y las dos fotos para reconstrucción 3D.</p>
+      <div class="facts"><span>A 12° adelante, B 12° atrás</span><span>B/H = 0,43</span><span>31 s entre fotos</span><span>error en altura ≈ 3,5 m</span></div>
+      <div class="go"><a href="concepto_camaras.html" target="_blank" rel="noopener">Abrir simulador 3D</a><code>interactive/concepto_camaras.html</code></div>
+    </li>
+    <li><span class="n">2</span>
+      <h2>Resorte, despliegue y recogida</h2>
+      <p>Ciclo completo del mecanismo con la física del par en órbita: el resorte separa, los cabrestantes frenan y despliegan 100 m, el sistema se mantiene, se recoge el cable y los imanes acoplan las mitades. Incluye los casos en que la recogida falla.</p>
+      <div class="facts"><span>resorte 0,2 m/s</span><span>despliegue 99 min</span><span>recogida 5,9 h</span><span>sin control: se tumba a 36 m</span></div>
+      <div class="go"><a href="mecanismo.html" target="_blank" rel="noopener">Abrir simulador del mecanismo</a><code>interactive/mecanismo.html</code></div>
+    </li>
+    <li><span class="n">3</span>
+      <h2>Simulador del dumbbell con cables</h2>
+      <p>Cinco escenas de análisis: despliegue con libración libre frente al modelo radial, coste del giro en vista inercial, transitorio térmico con y sin compensación, reparto de tensión entre tres cables y lo que ve cada cámara.</p>
+      <div class="facts"><span>T_gg(100 m) = 0,719 mN</span><span>19 aflojamientos sin compensar</span><span>primer cable flojo a 0,0062°</span><span>par máx. 5,1×10⁻⁵ N·m</span></div>
+      <div class="go"><a href="simulador.html" target="_blank" rel="noopener">Abrir simulador de análisis</a><code>interactive/simulador.html</code></div>
+    </li>
+  </ol>
+  <p class="note">Todos usan el mismo modelo del par en órbita circular a 550 km que verifican las pruebas de <code>tests/test_reference.py</code>. Las escenas están a escala esquemática cuando hace falta para que se vean; los ángulos y las cifras son los del diseño. El simulador 3D necesita conexión a internet.</p>
+</div>
+</body></html>
