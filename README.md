@@ -32,6 +32,8 @@ half-separation `l` with `m_eq`. That pairing gives an equilibrium tension of
 
 ## Interactive simulator
 
+English versions of all pages are in `interactive/en/` (start at `interactive/en/index.html`).
+
 `interactive/simulador.html` is a standalone page (open it in a browser) with
 five scenes: deployment with free libration against the radial model,
 inertial view of the spin cost, the thermal transient at the terminator with
