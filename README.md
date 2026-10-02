@@ -44,3 +44,9 @@ imaging concept: separation, vertical alignment, camera placement and
 pointing (both nadir, adjacent strips, fore/aft stereo), live camera views
 and the stereo pair. Schematic scale; camera tilt angles are the design
 values. Needs an internet connection (loads three.js from a CDN).
+
+`interactive/mecanismo.html` simulates a full mechanism cycle in the
+in-plane dumbbell model: spring separation, winch braking and exponential
+deployment, hold with libration damping by length modulation, retrieval
+and magnetic docking. It shows that retrieval is unstable without
+libration control (cable tumbles at 36 m) or when too fast (lambda = 0.4 n).

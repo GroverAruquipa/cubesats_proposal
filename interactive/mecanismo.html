@@ -1,0 +1,410 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>
+<title>Resorte, despliegue y recogida</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: banco de ensayo — barra de fases arriba, detalle del mecanismo y vista orbital lado a lado, mandos a la derecha, cuatro gráficas debajo. */
+:root{
+  --bg:#EDF0F3; --panel:#FFFFFF; --fg:#13202A; --muted:#55636E; --line:#CCD4DB; --grid:#E4E9ED;
+  --p-spring:#C77700; --p-deploy:#1C7ED6; --p-hold:#5C7A6B; --p-retr:#7048E8; --p-dock:#0C8599; --bad:#C92A2A; --good:#2B8A3E;
+  --metal:#AEB8C1; --metal-d:#6F7B85; --cable:#13202A; --mag:#D6336C;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0C1319; --panel:#131D26; --fg:#E3E9EE; --muted:#93A1AD; --line:#283744; --grid:#1B2833;
+  --p-spring:#FFA94D; --p-deploy:#4DABF7; --p-hold:#8FB3A0; --p-retr:#9775FA; --p-dock:#3BC9DB; --bad:#FF8787; --good:#69DB7C;
+  --metal:#5B6873; --metal-d:#8796A3; --cable:#E3E9EE; --mag:#F783AC; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0C1319; --panel:#131D26; --fg:#E3E9EE; --muted:#93A1AD; --line:#283744; --grid:#1B2833;
+  --p-spring:#FFA94D; --p-deploy:#4DABF7; --p-hold:#8FB3A0; --p-retr:#9775FA; --p-dock:#3BC9DB; --bad:#FF8787; --good:#69DB7C;
+  --metal:#5B6873; --metal-d:#8796A3; --cable:#E3E9EE; --mag:#F783AC; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.5 var(--f-body);margin:0}
+.wrap{max-width:1320px;margin:0 auto;padding-inline:clamp(16px,2.5vw,28px);padding-block:18px 40px}
+.eyebrow{font:500 12px/1.3 var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font:700 clamp(26px,3.6vw,38px)/1.05 var(--f-display);margin:4px 0 6px;text-wrap:balance}
+.sub{color:var(--muted);margin:0;max-width:80ch}
+.phasebar{position:relative;display:flex;height:40px;margin:18px 0 6px;border-radius:6px;overflow:hidden;border:1px solid var(--line);background:var(--panel)}
+.phasebar button{border:0;cursor:pointer;color:#fff;font:600 13px/1 var(--f-display);letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 6px;min-width:0}
+.phasebar .ph{flex:1 1 0}
+.playhead{position:absolute;top:0;bottom:0;width:3px;background:var(--fg);box-shadow:0 0 0 2px var(--panel);pointer-events:none}
+.phasenote{font:12px/1.4 var(--f-mono);color:var(--muted);margin:0 0 12px}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media (max-width:1000px){.main{grid-template-columns:minmax(0,1fr)}}
+.views{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+@media (max-width:640px){.views{grid-template-columns:minmax(0,1fr)}}
+.view{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px;min-width:0}
+.view h3,.card h3{font:600 13px/1.2 var(--f-display);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.view canvas{display:block;width:100%;height:480px}
+.transport{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.transport input[type=range]{flex:1 1 240px;min-width:0;accent-color:var(--fg)}
+.btn{font:500 14px/1 var(--f-body);padding:9px 13px;border-radius:5px;border:1px solid var(--line);background:var(--panel);color:var(--fg);cursor:pointer}
+.btn.primary{background:var(--fg);color:var(--panel);border-color:var(--fg)}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--p-deploy);outline-offset:2px}
+.clock{font:500 13px/1.2 var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px}
+.now{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.now .chip{font:600 14px/1 var(--f-display);letter-spacing:.03em;color:#fff;padding:6px 10px;border-radius:999px}
+.now .speed{font:500 12px/1 var(--f-mono);color:var(--muted)}
+.story{font-size:14px;margin:0}
+.ctl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin-bottom:10px;align-items:center}
+.ctl label{font-size:13px}
+.ctl output{font:500 12px/1 var(--f-mono);font-variant-numeric:tabular-nums}
+.ctl input[type=range]{grid-column:1/-1;width:100%;accent-color:var(--fg)}
+label.chk{display:flex;gap:8px;align-items:center;font-size:14px;margin:4px 0 10px}
+select{width:100%;font:inherit;font-size:14px;padding:8px;border-radius:5px;border:1px solid var(--line);background:var(--panel);color:var(--fg);margin-bottom:12px}
+table.read{width:100%;border-collapse:collapse;font-size:13px}
+table.read th{text-align:left;font-weight:400;color:var(--muted);padding:3px 0}
+table.read td{text-align:right;font:500 12.5px/1.3 var(--f-mono);font-variant-numeric:tabular-nums;padding:3px 0 3px 8px;white-space:nowrap}
+.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+@media (max-width:800px){.charts{grid-template-columns:minmax(0,1fr)}}
+.chart{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 10px 6px;min-width:0}
+.chart h4{font:600 15px/1.2 var(--f-display);margin:0 0 4px}
+.chart canvas{display:block;width:100%;height:200px}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted);margin:0 0 4px}
+.sw{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:5px}
+.result{margin-top:16px;padding:12px 14px;border-radius:8px;border:1px solid var(--line);background:var(--panel);font-size:14.5px;max-width:100%}
+.result.good{border-left:4px solid var(--good)} .result.bad{border-left:4px solid var(--bad)}
+footer{margin-top:22px;font-size:13px;color:var(--muted);max-width:100ch}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">CUBICS 2026 · mecanismo de cables · 2 × 3U · 550 km · m = 4 kg por mitad</div>
+  <h1>Resorte, despliegue y recogida</h1>
+  <p class="sub">Un ciclo completo simulado con la física del par en órbita: el resorte separa las mitades, los cabrestantes frenan y despliegan 100 m de cable, el sistema se mantiene, los cabrestantes recogen el cable y unos imanes acoplan las mitades de nuevo. A la izquierda el detalle del mecanismo; a la derecha el par visto en órbita.</p>
+
+  <div class="phasebar" id="phasebar"><div class="playhead" id="playhead"></div></div>
+  <p class="phasenote">Cada fase ocupa el mismo ancho en la barra aunque duren desde segundos hasta horas. Pulsa una fase para saltar a ella.</p>
+
+  <div class="main">
+    <div>
+      <div class="views">
+        <div class="view"><h3>Detalle del mecanismo</h3><canvas id="mech" aria-label="Corte de las caras enfrentadas con resorte, cabrestantes e imanes"></canvas></div>
+        <div class="view"><h3>El par en órbita</h3><canvas id="orb" aria-label="Vista del par en el marco orbital local"></canvas></div>
+      </div>
+      <div class="transport">
+        <button class="btn primary" id="play">Pausa</button>
+        <input type="range" id="scrub" min="0" max="10000" value="0" aria-label="Avance del ciclo">
+        <span class="clock" id="clock"></span>
+      </div>
+    </div>
+    <div class="side">
+      <div class="card">
+        <div class="now"><span class="chip" id="chip"></span><span class="speed" id="speed"></span></div>
+        <p class="story" id="story"></p>
+      </div>
+      <div class="card">
+        <h3>Casos</h3>
+        <select id="preset" aria-label="Caso">
+          <option value="ok">Ciclo completo con control de libración</option>
+          <option value="nodamp">Recogida sin control de libración</option>
+          <option value="fast">Recogida demasiado rápida</option>
+          <option value="hard">Resorte fuerte, 0,30 m/s</option>
+        </select>
+        <div class="ctl"><label for="v0">Velocidad que da el resorte</label><output id="v0-o"></output><input type="range" id="v0" min="0.05" max="0.3" step="0.01"></div>
+        <div class="ctl"><label for="lamd">Ritmo de despliegue λ / n</label><output id="lamd-o"></output><input type="range" id="lamd" min="0.2" max="0.74" step="0.01"></div>
+        <div class="ctl"><label for="lamr">Ritmo de recogida λ / n</label><output id="lamr-o"></output><input type="range" id="lamr" min="0.05" max="0.5" step="0.01"></div>
+        <div class="ctl"><label for="hold">Tiempo desplegado</label><output id="hold-o"></output><input type="range" id="hold" min="0.5" max="4" step="0.5"></div>
+        <label class="chk"><input type="checkbox" id="damp"> Control de libración con el cabrestante</label>
+      </div>
+      <div class="card">
+        <h3>En este instante</h3>
+        <table class="read" id="read"></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="result" id="result"></div>
+
+  <div class="charts">
+    <div class="chart"><h4>Separación: primeros 30 s</h4><div class="legend"><span><i class="sw" style="background:var(--p-spring)"></i>hueco entre caras [cm]</span><span><i class="sw" style="background:var(--p-deploy)"></i>velocidad L′ [cm/s]</span></div><canvas id="ch1"></canvas></div>
+    <div class="chart"><h4>Longitud del cable en todo el ciclo [m, escala log]</h4><div class="legend"><span><i class="sw" style="background:var(--fg)"></i>L</span><span>fondo: fase</span></div><canvas id="ch2"></canvas></div>
+    <div class="chart"><h4>Libración φ [°]</h4><div class="legend"><span><i class="sw" style="background:var(--fg)"></i>φ</span><span><i class="sw" style="background:var(--bad)"></i>±80°: el cable se tumba</span></div><canvas id="ch3"></canvas></div>
+    <div class="chart"><h4>Acople: últimos 150 s</h4><div class="legend"><span><i class="sw" style="background:var(--p-dock)"></i>hueco [cm]</span><span><i class="sw" style="background:var(--mag)"></i>fuerza de los imanes [mN]</span></div><canvas id="ch4"></canvas></div>
+  </div>
+
+  <footer>Modelo: dos masas puntuales en órbita circular a 550 km, libración en el plano, cable sin masa que solo tira. Resorte lineal de 15 cm de carrera. El cabrestante sigue una velocidad de referencia con anticipación de la tensión de equilibrio y tensión máxima de 50 mN. El control de libración alarga o acorta el cable en fase con φ′. Los imanes son dos bobinas de 0,8 A·m² con atracción de dipolos, F = 3μ₀m²/(2πd⁴). El detalle del mecanismo es un esquema: tambores, guías y bobinas no son un diseño de ingeniería.</footer>
+</div>
+
+<script>
+"use strict";
+(function(){
+const $=id=>document.getElementById(id);
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+// ---------- physics constants ----------
+const MU=3.986004418e14, A=6378.137e3+550e3, N=Math.sqrt(MU/A**3), PER=2*Math.PI/N, N2=N*N;
+const M=2.0;            // reduced mass m1 m2/(m1+m2), kg
+const LST=0.34;         // centre distance when stowed (two 3U end to end), m
+const STROKE=0.15;      // spring stroke, m
+const TMAX=0.05;        // winch tension limit, N
+const KV=0.05;          // winch rate-loop gain, 1/s
+const LF=100;           // deployed length, m
+const MU0=4e-7*Math.PI, MB=0.8; // magnetic moment of each coil, A m2
+const DRUM_CORE=0.006, DRUM_FULL=0.011; // winch drum radii, m
+const DEG=180/Math.PI;
+const PH=[
+ {k:"spring",name:"Resorte",col:"--p-spring",speed:0.5,
+  story:"Se corta el hilo que retiene las mitades. El resorte (stacer) se estira 15 cm en algo más de un segundo y las empuja. Los cables salen de los tambores casi sin freno."},
+ {k:"deploy",name:"Despliegue",col:"--p-deploy",speed:900,
+  story:"El resorte se retrae a su alojamiento para no estorbar en el acople. Los cabrestantes frenan la velocidad del resorte en alrededor de un minuto y luego dejan salir cable a un ritmo exponencial lento, L′ = λL. El gradiente de gravedad separa las mitades; el freno solo regula."},
+ {k:"hold",name:"Desplegado",col:"--p-hold",speed:2400,
+  story:"A 100 m el cabrestante mantiene la longitud. Si el control está activo, alarga y acorta el cable unos centímetros en fase con la oscilación y la amortigua, como quien frena un columpio."},
+ {k:"retrieve",name:"Recogida",col:"--p-retr",speed:2400,
+  story:"Los cabrestantes recogen el cable. Al acortarse, la oscilación crece sola: es el efecto contrario al despliegue. Sin control, o recogiendo demasiado rápido, el cable se tumba."},
+ {k:"dock",name:"Acople",col:"--p-dock",speed:10,
+  story:"En el último metro el cabrestante acerca las mitades a 5 mm/s. A menos de 30 cm las bobinas magnéticas tiran y alinean las caras hasta que hacen contacto y se enganchan. El resorte está retraído: si siguiera fuera, empujaría con hasta 0,5 N y ni el cabrestante ni los imanes podrían cerrarlo."},
+];
+const PHI={};PH.forEach((p,i)=>PHI[p.k]=i);
+let C={};function readC(){const s=getComputedStyle(document.documentElement);["bg","panel","fg","muted","line","grid","bad","good","metal","metal-d","cable","mag"].forEach(k=>C[k]=s.getPropertyValue("--"+k).trim());PH.forEach(p=>C[p.k]=s.getPropertyValue(p.col).trim());C.mono=s.getPropertyValue("--f-mono").trim();C.disp=s.getPropertyValue("--f-display").trim();}
+readC();matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{readC();buildBar();draw();});
+new MutationObserver(()=>{readC();buildBar();draw();}).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+const dec=(x,d=2)=>(isFinite(x)?x.toFixed(d).replace(".",","):"—");
+const fmtT=t=>t<120?dec(t,1)+" s":t<7200?dec(t/60,1)+" min":dec(t/3600,2)+" h";
+
+// ---------- simulation ----------
+const P={v0:0.2,lamd:0.5,lamr:0.2,hold:2,damp:true};
+const PRESETS={ok:{v0:0.2,lamd:0.5,lamr:0.2,hold:2,damp:true},nodamp:{v0:0.2,lamd:0.5,lamr:0.2,hold:2,damp:false},
+  fast:{v0:0.2,lamd:0.5,lamr:0.4,hold:2,damp:true},hard:{v0:0.3,lamd:0.5,lamr:0.2,hold:2,damp:true}};
+let RUN=null;
+function simulate(){
+  const ks=M*P.v0**2/STROKE**2;
+  let ph=0,tRet=0;
+  const out={t:[],L:[],Ld:[],phi:[],T:[],Fm:[],ph:[],turns:[],phaseStart:[0,null,null,null,null],end:null,fail:null,slack:0,contactV:null,maxPhi:[0,0,0,0,0],brakeT:null};
+  const forces=(y)=>{
+    const[L,Ld,p,pd]=y;const gap=L-LST;let Fs=0,Fm=0,T=0;
+    if(ph===0){Fs=gap<STROKE?ks*(STROKE-gap):0;return[0,Fs,0];}
+    if(ph===4&&gap<0.3){const d=gap+0.06;Fm=3*MU0*MB*MB/(2*Math.PI*d**4);}
+    const w=pd+N;const Tff=M*L*(w*w-N2*(1-3*Math.cos(p)**2));
+    const dterm=P.damp?0.5*0.6*L*pd:0;
+    let vd;
+    if(ph===1)vd=P.lamd*N*L+dterm;else if(ph===2)vd=-0.002*(L-LF)+dterm;else if(ph===3)vd=-P.lamr*N*L+dterm;else vd=-0.005;
+    T=Math.min(TMAX,Math.max(0,Tff+M*KV*(Ld-vd)));
+    return[T,Fs,Fm];
+  };
+  const f=(y)=>{const[L,Ld,p,pd]=y;const[T,Fs,Fm]=forces(y);const w=pd+N;
+    return[Ld,L*(w*w-N2*(1-3*Math.cos(p)**2))+(Fs-Fm-T)/M,pd,-2*Ld/L*w-3*N2*Math.sin(p)*Math.cos(p)];};
+  let y=[LST,0,0,0],t=0,prevT=0,lastStore=-1;
+  const store=(force)=>{const[T,,Fm]=forces(y);const pay=Math.max(0,y[0]-LST);
+    out.t.push(t);out.L.push(y[0]);out.Ld.push(y[1]);out.phi.push(y[2]);out.T.push(T);out.Fm.push(Fm);out.ph.push(ph);out.turns.push(pay/(2*Math.PI*DRUM_CORE*1.4));};
+  store();
+  while(t<120000){
+    const fine=ph===0||ph===4||(ph===1&&t-out.phaseStart[1]<120);
+    const dt=fine?0.01:1.0;
+    const k1=f(y),y2=y.map((v,i)=>v+dt/2*k1[i]),k2=f(y2),y3=y.map((v,i)=>v+dt/2*k2[i]),k3=f(y3),y4=y.map((v,i)=>v+dt*k3[i]),k4=f(y4);
+    y=y.map((v,i)=>v+dt/6*(k1[i]+2*k2[i]+2*k3[i]+k4[i]));t+=dt;
+    const T=forces(y)[0];if(ph>0&&prevT>0&&T<=0)out.slack++;prevT=T;
+    out.maxPhi[ph]=Math.max(out.maxPhi[ph],Math.abs(y[2]*DEG));
+    if(ph===1&&out.brakeT===null&&y[1]<=0.01)out.brakeT=t-out.phaseStart[1];
+    let changed=false;
+    if(ph===0&&y[0]-LST>=STROKE){ph=1;changed=true;}
+    else if(ph===1&&y[0]>=LF*0.99){ph=2;changed=true;tRet=t+P.hold*PER;}
+    else if(ph===2&&t>=tRet){ph=3;changed=true;}
+    else if(ph===3&&y[0]<=1.0){ph=4;changed=true;}
+    if(changed)out.phaseStart[ph]=t;
+    const storeEvery=fine?0.05:4;
+    if(changed||t-lastStore>=storeEvery-1e-9){store();lastStore=t;}
+    if(ph===4&&y[0]-LST<=0){out.contactV=-y[1];y[0]=LST;y[1]=0;store();out.end=t;break;}
+    if(Math.abs(y[2])>80/DEG||y[0]<0.05||y[0]>3000){out.fail={t,ph,L:y[0]};store();out.end=t;break;}
+  }
+  if(out.end===null)out.end=t;
+  for(const k of["t","L","Ld","phi","T","Fm","turns"])out[k]=Float64Array.from(out[k]);
+  out.ph=Int8Array.from(out.ph);
+  // playback map: each phase advances at its own speed
+  out.durations=PH.map((_,i)=>{const s=out.phaseStart[i];if(s===null)return 0;let e=out.end;for(let j=i+1;j<5;j++)if(out.phaseStart[j]!==null){e=out.phaseStart[j];break;}return Math.max(0,e-s);});
+  return out;
+}
+
+// ---------- phase bar ----------
+function buildBar(){
+  const bar=$("phasebar");bar.querySelectorAll(".ph").forEach(b=>b.remove());
+  PH.forEach((p,i)=>{const b=document.createElement("button");b.className="ph";b.style.background=C[p.k];
+    const reached=RUN&&RUN.phaseStart[i]!==null;b.style.opacity=reached?1:0.35;
+    b.textContent=p.name+(reached?" · "+fmtT(RUN.durations[i]):"");b.title=p.name;b.onclick=()=>{if(reached){S.t=RUN.phaseStart[i]+(i===0?0:0.01);S.playing=false;updPlay();draw();}};
+    bar.insertBefore(b,$("playhead"));});
+}
+function barFrac(t){ // equal width per phase
+  let i=4;for(let j=0;j<5;j++){const s=RUN.phaseStart[j];if(s===null)continue;const nx=RUN.phaseStart.slice(j+1).find(v=>v!==null);const e=nx===undefined?RUN.end:nx;if(t<e||j===4){i=j;break;}}
+  const s=RUN.phaseStart[i]??0,d=RUN.durations[i]||1;return(i+Math.min(1,Math.max(0,(t-s)/d)))/5;
+}
+function fracToT(fr){const i=Math.min(4,Math.floor(fr*5));if(RUN.phaseStart[i]===null)return RUN.end;return RUN.phaseStart[i]+(fr*5-i)*RUN.durations[i];}
+
+// ---------- canvas helpers ----------
+function fit(cv){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1,w=Math.max(10,r.width),h=Math.max(10,cv.clientHeight);
+  if(cv.width!==Math.round(w*d)||cv.height!==Math.round(h*d)){cv.width=Math.round(w*d);cv.height=Math.round(h*d);}const g=cv.getContext("2d");g.setTransform(d,0,0,d,0,0);g.clearRect(0,0,w,h);return{g,w,h};}
+function idxAt(t){const a=RUN.t;let lo=0,hi=a.length-1;if(t<=a[0])return 0;if(t>=a[hi])return hi;while(hi-lo>1){const m=(lo+hi)>>1;a[m]<=t?lo=m:hi=m;}return lo;}
+function val(arr,t){const i=idxAt(t),j=Math.min(arr.length-1,i+1),a=RUN.t;const u=a[j]>a[i]?(t-a[i])/(a[j]-a[i]):0;return arr[i]+(arr[j]-arr[i])*Math.min(1,Math.max(0,u));}
+
+// ---------- mechanism drawing ----------
+function drawMech(){
+  const{g,w,h}=fit($("mech"));const t=S.t;const L=val(RUN.L,t),T=val(RUN.T,t),Fm=val(RUN.Fm,t);const i=idxAt(t);const ph=RUN.ph[i];
+  const gap=Math.max(0,L-LST);
+  const s=Math.min(w/0.34,(h-90)/0.5);    // px per metre for the drawing
+  const bodyW=0.1*s, bodyH=0.17*s;           // show the facing half of each 3U
+  const cx=w/2;
+  const maxTrue=Math.max(0.05,(h-2*bodyH-70)/s); // largest gap drawn to scale
+  const broken=gap>maxTrue;
+  const gapPx=broken?maxTrue*s:gap*s;
+  const topY=h/2-gapPx/2-bodyH, botY=h/2+gapPx/2;   // upper body top edge, lower body top edge
+  const faceB=topY+bodyH, faceA=botY;
+  // bodies
+  const body=(y,label,col)=>{g.fillStyle=C.metal;g.strokeStyle=C.fg;g.lineWidth=1.5;g.fillRect(cx-bodyW/2,y,bodyW,bodyH);g.strokeRect(cx-bodyW/2,y,bodyW,bodyH);
+    g.fillStyle=col;g.font="600 13px "+C.disp;g.textBaseline="middle";
+    if(cx+bodyW/2+8+g.measureText(label).width<w-4){g.textAlign="left";g.fillText(label,cx+bodyW/2+8,y+bodyH/2);}
+    else{g.textAlign="center";g.fillStyle=C.panel;g.globalAlpha=.85;const tw=g.measureText(label).width+8;const ly=y===topY?y+12:y+bodyH-12;g.fillRect(cx-tw/2,ly-9,tw,18);g.globalAlpha=1;g.fillStyle=col;g.fillText(label,cx,ly);}};
+  body(topY,"Mitad B · cabrestantes",C.fg);body(botY,"Mitad A · anclajes",C.fg);
+  // cable exits (side view of the triangle): x offsets
+  const xs=[-0.03,0,0.03].map(v=>cx+v*s);
+  // winch drums inside B
+  const turns=val(RUN.turns,t);const pay=Math.max(0,L-LST);const frac=Math.min(1,pay/LF);
+  const rWrap=(DRUM_CORE+(DRUM_FULL-DRUM_CORE)*(1-frac))*s, rCore=DRUM_CORE*s;
+  xs.forEach((x,k)=>{const dy=faceB-bodyH*0.42;g.fillStyle=C.panel;g.strokeStyle=C.fg;g.lineWidth=1.2;
+    g.beginPath();g.arc(x,dy,DRUM_FULL*s+2,0,7);g.fill();g.stroke();
+    g.fillStyle=C.cable;g.globalAlpha=.55;g.beginPath();g.arc(x,dy,rWrap,0,7);g.fill();g.globalAlpha=1;
+    g.fillStyle=C["metal-d"];g.beginPath();g.arc(x,dy,rCore*0.8,0,7);g.fill();
+    const ang=turns*2*Math.PI*(k%2?-1:1);g.strokeStyle=C.panel;g.lineWidth=1.5;g.beginPath();g.moveTo(x,dy);g.lineTo(x+rCore*0.8*Math.cos(ang),dy+rCore*0.8*Math.sin(ang));g.stroke();
+    // cable from drum to guide
+    g.strokeStyle=C.cable;g.lineWidth=1;g.beginPath();g.moveTo(x+rWrap,dy);g.lineTo(x+rWrap*0.3,faceB-3);g.lineTo(x,faceB);g.stroke();
+    // guide eyelet
+    g.fillStyle=C.fg;g.fillRect(x-3,faceB-4,6,4);
+  });
+  g.fillStyle=C.muted;g.font="11px "+C.mono;g.textAlign="right";g.textBaseline="middle";g.fillText("3 tambores →",cx-bodyW/2-6,faceB-bodyH*0.42);
+  // anchors on A
+  xs.forEach(x=>{g.fillStyle=C.fg;g.fillRect(x-3,faceA,6,4);});
+  // magnets on both faces
+  const magOn=ph===4&&gap<0.3;const mx=[cx-bodyW*0.36,cx+bodyW*0.36];
+  for(const x of mx){for(const[y,dir]of[[faceB-9,1],[faceA+1,1]]){g.fillStyle=magOn?C.mag:C["metal-d"];g.fillRect(x-7,y,14,8);g.strokeStyle=C.fg;g.lineWidth=1;g.strokeRect(x-7,y,14,8);}
+    if(magOn&&!broken){g.strokeStyle=C.mag;g.globalAlpha=.6;g.setLineDash([3,3]);for(const o of[-6,6]){g.beginPath();g.moveTo(x+o,faceB);g.bezierCurveTo(x+o*2.2,faceB+gapPx*0.3,x+o*2.2,faceA-gapPx*0.3,x+o,faceA);g.stroke();}g.setLineDash([]);g.globalAlpha=1;}}
+  // hold-down / separation bolt
+  if(t<0.05){g.fillStyle=C.bad;g.fillRect(cx-bodyW*0.18-2,faceB-6,4,12);}
+  // stacer spring: attached to A, between the cable exits
+  const sx=cx-0.045*s*0.0+(-0.015)*s;const ext=Math.min(STROKE,gap);
+  const springTop=ph===0?faceB:faceA-Math.min(STROKE,gap)*s*(broken?0:1);
+  const tSep=RUN.phaseStart[1]??Infinity;const retr=ph===0?0:Math.min(1,Math.max(0,(t-tSep)/30));
+  {const y0=faceA,len=Math.max(4,(ph===0?gap:Math.min(STROKE,gap)*(1-retr))*s);const yTop=broken&&ph!==0?faceA-Math.min(len,gapPx*0.45):y0-len;
+    const coils=12;g.strokeStyle=C["p-spring"]||C.spring;g.strokeStyle=C.spring;g.lineWidth=1.6;g.beginPath();
+    for(let k=0;k<=coils*8;k++){const u=k/(coils*8);const y=y0+(yTop-y0)*u;const x=sx+4*Math.sin(u*coils*2*Math.PI);k?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();
+    g.fillStyle=C.spring;g.fillRect(sx-5,yTop-2,10,3);
+    if(ph>0){g.fillStyle=C.muted;g.font="11px "+C.mono;g.textAlign="right";g.textBaseline="middle";g.fillText(retr>=1?"resorte retraído":"resorte retrayéndose",cx-bodyW/2-6,faceA+bodyH*0.3);}}
+  // cables across the gap
+  const slack=T<=0&&ph>0&&ph<5&&gap>0.02;
+  xs.forEach(x=>{g.strokeStyle=slack?C.bad:C.cable;g.lineWidth=T>0?1.6:1.1;g.beginPath();
+    if(!broken){if(slack){for(let k=0;k<=40;k++){const u=k/40;const y=faceB+(faceA-faceB)*u;const xx=x+5*Math.sin(u*Math.PI*3)*Math.sin(u*Math.PI);k?g.lineTo(xx,y):g.moveTo(xx,y);}}else{g.moveTo(x,faceB);g.lineTo(x,faceA);}}
+    else{const y1=faceB+gapPx*0.38,y2=faceB+gapPx*0.62;g.moveTo(x,faceB);g.lineTo(x,y1);g.moveTo(x,y2);g.lineTo(x,faceA);}
+    g.stroke();});
+  if(broken){const y1=faceB+gapPx*0.38,y2=faceB+gapPx*0.62;g.strokeStyle=C.muted;g.lineWidth=1.2;
+    for(const yy of[y1,y2]){g.beginPath();for(let k=0;k<=12;k++){const x=cx-bodyW*0.8+k*(bodyW*1.6/12);const y=yy+(k%2?4:-4);k?g.lineTo(x,y):g.moveTo(x,y);}g.stroke();}
+    g.fillStyle=C.fg;g.font="600 15px "+C.mono;g.textAlign="center";g.textBaseline="middle";g.fillStyle=C.panel;g.fillRect(cx-70,(y1+y2)/2-11,140,22);g.fillStyle=C.fg;g.fillText(`L = ${L<10?dec(L,2):dec(L,1)} m`,cx,(y1+y2)/2);}
+  else{g.strokeStyle=C.muted;g.lineWidth=1;const xr=cx-bodyW/2-14;g.beginPath();g.moveTo(xr,faceB);g.lineTo(xr,faceA);g.moveTo(xr-4,faceB);g.lineTo(xr+4,faceB);g.moveTo(xr-4,faceA);g.lineTo(xr+4,faceA);g.stroke();
+    g.fillStyle=C.fg;g.font="12px "+C.mono;g.textAlign="right";g.textBaseline="middle";g.fillText(`${dec(gap*100,1)} cm`,xr-6,(faceB+faceA)/2);}
+  // labels
+  g.font="11px "+C.mono;g.fillStyle=C.muted;g.textAlign="left";g.textBaseline="top";
+  g.fillText(`tambores: ${dec(turns,0)} vueltas`,8,8);g.fillText(`tensión total: ${(T*1e3).toFixed(3).replace(".",",")} mN`,8,24);
+  if(magOn)g.fillText(`imanes: ${(Fm*1e3).toFixed(2).replace(".",",")} mN`,8,40);
+  if(RUN.contactV!==null&&t>=RUN.end-1e-6){g.fillStyle=C.good;g.font="600 14px "+C.disp;g.fillText(`Enganchadas a ${dec(RUN.contactV*100,1)} cm/s`,8,h-22);}
+  if(RUN.fail&&t>=RUN.end-1e-6){g.fillStyle=C.bad;g.font="600 14px "+C.disp;g.fillText("El cable se tumbó: recogida fallida",8,h-22);}
+}
+// ---------- orbit drawing ----------
+const trail=[];
+function drawOrb(){
+  const{g,w,h}=fit($("orb"));const t=S.t;const L=val(RUN.L,t),phi=val(RUN.phi,t),T=val(RUN.T,t);const i=idxAt(t);const ph=RUN.ph[i];
+  const cx=w/2,cy=h*0.5;
+  g.strokeStyle=C.line;g.setLineDash([3,4]);g.beginPath();g.moveTo(cx,20);g.lineTo(cx,h-30);g.stroke();g.setLineDash([]);
+  g.fillStyle=C.muted;g.font="11px "+C.mono;g.textAlign="center";g.textBaseline="bottom";g.fillText("↓ Tierra",cx,h-8);g.textAlign="right";g.fillText("vuelo →",w-8,h-8);
+  g.textAlign="left";g.textBaseline="top";g.fillText("vertical local",cx+6,22);
+  const half=Math.max(L/2,0.35);const sc=Math.min(w*0.42,h*0.38)/half;
+  // trail of the upper half over recent history
+  g.strokeStyle=C[PH[ph].k];g.globalAlpha=.35;g.lineWidth=1;g.beginPath();let first=true;
+  const i0=idxAt(Math.max(0,t-PER*0.6));for(let j=i0;j<=i;j+=Math.max(1,Math.floor((i-i0)/300))){const xx=cx+sc*RUN.L[j]/2*Math.sin(RUN.phi[j]),yy=cy-sc*RUN.L[j]/2*Math.cos(RUN.phi[j]);first?g.moveTo(xx,yy):g.lineTo(xx,yy);first=false;}g.stroke();g.globalAlpha=1;
+  const ux=Math.sin(phi),uy=Math.cos(phi);const bx=cx+sc*L/2*ux,by=cy-sc*L/2*uy,ax=cx-sc*L/2*ux,ay=cy+sc*L/2*uy;
+  if(T>0||ph===0){g.strokeStyle=C.cable;g.lineWidth=1.8;g.beginPath();g.moveTo(ax,ay);g.lineTo(bx,by);g.stroke();}
+  else{g.strokeStyle=C.bad;g.setLineDash([5,4]);g.lineWidth=1.4;g.beginPath();g.moveTo(ax,ay);g.quadraticCurveTo(cx+12*uy,cy+12*ux,bx,by);g.stroke();g.setLineDash([]);}
+  if(Math.abs(phi)>0.02){g.strokeStyle=C[PH[ph].k];g.lineWidth=1.5;g.beginPath();g.arc(cx,cy,40,-Math.PI/2,-Math.PI/2+phi,phi<0);g.stroke();
+    g.fillStyle=C.fg;g.font="600 13px "+C.mono;g.textAlign="left";g.textBaseline="middle";g.fillText(`φ = ${dec(phi*DEG,1)}°`,cx+10,cy-54);}
+  for(const[x,y,lb]of[[bx,by,"B"],[ax,ay,"A"]]){g.save();g.translate(x,y);g.rotate(phi);g.fillStyle=C.metal;g.strokeStyle=C.fg;g.lineWidth=1.5;g.fillRect(-7,-12,14,24);g.strokeRect(-7,-12,14,24);g.restore();
+    g.fillStyle=C.fg;g.font="600 13px "+C.disp;g.textAlign="left";g.textBaseline="middle";g.fillText(lb,x+14,y);}
+  // scale bar
+  const target=w*0.25/sc;const p10=10**Math.floor(Math.log10(target));const bar=[1,2,5,10].map(m=>m*p10).filter(v=>v<=target).pop()||p10;
+  g.strokeStyle=C.fg;g.lineWidth=1.5;g.beginPath();g.moveTo(10,h-14);g.lineTo(10+bar*sc,h-14);g.stroke();g.fillStyle=C.fg;g.font="11px "+C.mono;g.textAlign="left";g.textBaseline="bottom";g.fillText((bar>=1?String(bar):dec(bar*100,0)+" c")+"m",10,h-18);
+}
+// ---------- charts ----------
+function chart(cv,o){
+  const{g,w,h}=fit(cv);const ml=50,mr=10,mt=8,mb=26,pw=w-ml-mr,ph=h-mt-mb;
+  const x0=o.x0,x1=o.x1;let y0=o.y0,y1=o.y1;
+  const tr=o.log?(v=>Math.log10(Math.max(v,1e-6))):(v=>v);
+  if(y0===undefined){y0=Infinity;y1=-Infinity;for(const s of o.series)for(let k=0;k<s.xs.length;k++){if(s.xs[k]<x0||s.xs[k]>x1)continue;const v=tr(s.ys[k]);if(isFinite(v)){y0=Math.min(y0,v);y1=Math.max(y1,v);}}if(!isFinite(y0)){y0=0;y1=1;}const pd=(y1-y0)*0.08||1;y0-=pd;y1+=pd;}
+  const X=x=>ml+(x-x0)/(x1-x0)*pw,Y=v=>mt+(1-(v-y0)/(y1-y0))*ph;
+  // phase bands
+  if(o.bands){for(let j=0;j<5;j++){const s=RUN.phaseStart[j];if(s===null)continue;const nx=RUN.phaseStart.slice(j+1).find(v=>v!==null);const e=nx===undefined?RUN.end:nx;
+    const a=Math.max(x0,o.bands(s)),b=Math.min(x1,o.bands(e));if(b<=a)continue;g.fillStyle=C[PH[j].k];g.globalAlpha=.12;g.fillRect(X(a),mt,X(b)-X(a),ph);g.globalAlpha=1;}}
+  g.strokeStyle=C.grid;g.lineWidth=1;g.fillStyle=C.muted;g.font="11px "+C.mono;
+  const ticks=(lo,hi,n)=>{const raw=(hi-lo)/n,p=10**Math.floor(Math.log10(raw)),st=[1,2,2.5,5,10].find(m=>m*p>=raw)*p;const r=[];for(let v=Math.ceil(lo/st)*st;v<=hi+1e-9;v+=st)r.push(+v.toPrecision(6));return r;};
+  const yt=o.log?ticks(Math.ceil(y0),Math.floor(y1),Math.max(1,Math.floor(y1)-Math.ceil(y0))).filter(v=>Number.isInteger(v)):ticks(y0,y1,4);
+  g.textAlign="right";g.textBaseline="middle";for(const v of yt){const yy=Math.round(Y(v))+.5;g.beginPath();g.moveTo(ml,yy);g.lineTo(ml+pw,yy);g.stroke();g.fillText(o.log?String(10**v).replace(".",","):String(v).replace(".",","),ml-6,yy);}
+  g.textAlign="center";g.textBaseline="top";for(const v of ticks(x0,x1,5)){const xx=Math.round(X(v))+.5;g.beginPath();g.moveTo(xx,mt);g.lineTo(xx,mt+ph);g.stroke();g.fillText(String(v).replace(".",","),xx,mt+ph+4);}
+  g.strokeStyle=C.line;g.strokeRect(ml+.5,mt+.5,pw,ph);g.textAlign="right";g.fillText(o.xl,ml+pw,mt+ph+15);
+  g.save();g.beginPath();g.rect(ml,mt,pw,ph);g.clip();
+  for(const hl of o.hl||[]){g.strokeStyle=hl.c;g.setLineDash([5,4]);g.beginPath();g.moveTo(ml,Y(tr(hl.y)));g.lineTo(ml+pw,Y(tr(hl.y)));g.stroke();g.setLineDash([]);}
+  for(const s of o.series){g.strokeStyle=s.c;g.lineWidth=1.8;g.beginPath();let pen=false;const n=s.xs.length;const st=Math.max(1,Math.floor(n/(pw*2)));
+    for(let k=0;k<n;k+=st){const x=s.xs[k];if(x<x0-1e-9||x>x1+1e-9){pen=false;continue;}const v=tr(s.ys[k]);if(!isFinite(v)){pen=false;continue;}pen?g.lineTo(X(x),Y(v)):g.moveTo(X(x),Y(v));pen=true;}g.stroke();}
+  if(o.cur!==undefined&&o.cur>=x0&&o.cur<=x1){g.strokeStyle=C.fg;g.globalAlpha=.6;g.beginPath();g.moveTo(X(o.cur),mt);g.lineTo(X(o.cur),mt+ph);g.stroke();g.globalAlpha=1;}
+  g.restore();
+}
+let CH=null;
+function prepCharts(){
+  const R=RUN,n=R.t.length;const th=new Float64Array(n),gapcm=new Float64Array(n),vcm=new Float64Array(n),phd=new Float64Array(n),Fmn=new Float64Array(n);
+  for(let k=0;k<n;k++){th[k]=R.t[k]/3600;gapcm[k]=(R.L[k]-LST)*100;vcm[k]=R.Ld[k]*100;phd[k]=R.phi[k]*DEG;Fmn[k]=R.Fm[k]*1e3;}
+  const td=R.phaseStart[4]!==null?R.t.map(v=>v-R.end):null;
+  CH={th,gapcm,vcm,phd,Fmn,td};
+}
+function drawCharts(){
+  const R=RUN,t=S.t;
+  chart($("ch1"),{x0:0,x1:30,xl:"t [s]",series:[{xs:R.t,ys:CH.gapcm,c:C.spring},{xs:R.t,ys:CH.vcm,c:C.deploy}],y0:-2,y1:Math.max(40,P.v0*100*1.1+5),cur:t,bands:v=>v});
+  const tEnd=R.end/3600;
+  chart($("ch2"),{x0:0,x1:tEnd,xl:"t [h]",log:true,series:[{xs:CH.th,ys:R.L,c:C.fg}],y0:Math.log10(0.2),y1:Math.log10(200),cur:t/3600,bands:v=>v/3600});
+  chart($("ch3"),{x0:0,x1:tEnd,xl:"t [h]",series:[{xs:CH.th,ys:CH.phd,c:C.fg}],y0:-90,y1:90,cur:t/3600,bands:v=>v/3600,hl:[{y:80,c:C.bad},{y:-80,c:C.bad}]});
+  if(CH.td){chart($("ch4"),{x0:-150,x1:0,xl:"t − t_contacto [s]",series:[{xs:CH.td,ys:CH.gapcm,c:C.dock},{xs:CH.td,ys:CH.Fmn,c:C.mag}],y0:-1,y1:Math.max(10,Math.min(70,Math.max(...CH.gapcm.filter((v,k)=>CH.td[k]>-150))*1.1)),cur:t-R.end,bands:v=>v-R.end});}
+  else{const{g,w,h}=fit($("ch4"));g.fillStyle=C.muted;g.font="14px "+C.mono;g.textAlign="center";g.textBaseline="middle";g.fillText("No hubo acople: la recogida falló antes.",w/2,h/2);}
+}
+
+// ---------- state, UI ----------
+const S={t:0,playing:!reduce};
+function speedAt(t){const ph=RUN.ph[idxAt(t)];if(ph===1&&t-RUN.phaseStart[1]<40)return 4;return PH[ph].speed;}
+function draw(){
+  if(!RUN)return;drawMech();drawOrb();drawCharts();
+  const i=idxAt(S.t),ph=RUN.ph[i],p=PH[ph];
+  $("chip").textContent=p.name;$("chip").style.background=C[p.k];$("speed").textContent=`reproducción ×${speedAt(S.t)}`;$("story").textContent=p.story;
+  $("playhead").style.left=`calc(${barFrac(S.t)*100}% - 1px)`;$("scrub").value=Math.round(barFrac(S.t)*10000);
+  $("clock").textContent=`t = ${fmtT(S.t)} · órbita ${dec(S.t/PER,2)}`;
+  const L=val(RUN.L,S.t),Ld=val(RUN.Ld,S.t),phi=val(RUN.phi,S.t),T=val(RUN.T,S.t);
+  const row=(k,v)=>`<tr><th>${k}</th><td>${v}</td></tr>`;
+  $("read").innerHTML=row("Separación entre centros",L<10?dec(L,3)+" m":dec(L,1)+" m")+row("Velocidad L′",Math.abs(Ld)<0.01?dec(Ld*1000,2)+" mm/s":dec(Ld*100,2)+" cm/s")+
+    row("Libración φ",dec(phi*DEG,1)+"°")+row("Tensión total",(T*1e3).toFixed(3).replace(".",",")+" mN")+row("Tensión de equilibrio 3n²m_eq L",(3*N2*M*L*1e3).toFixed(3).replace(".",",")+" mN")+
+    row("Vueltas de cada tambor",dec(val(RUN.turns,S.t),0));
+}
+function result(){
+  const R=RUN,el=$("result");const d=R.durations;
+  if(R.fail){el.className="result bad";el.innerHTML=`<b>La recogida falla.</b> El cable se tumbó (φ > 80°) a ${dec(R.fail.L,1)} m, ${fmtT(R.fail.t-R.phaseStart[3])} después de empezar a recoger. ${P.damp?`Recoger a λ = ${dec(P.lamr,2)} n es demasiado rápido: la oscilación crece más deprisa de lo que el cabrestante puede amortiguarla.`:`Sin control, acortar el cable bombea la oscilación: el término de Coriolis, que en el despliegue frena el balanceo, en la recogida lo amplifica.`} El despliegue sí funcionó: ${fmtT(d[1])} hasta 100 m con libración máxima de ${dec(R.maxPhi[1],0)}°.`;}
+  else{el.className="result good";el.innerHTML=`<b>Ciclo completo.</b> El resorte da ${dec(P.v0*100,0)} cm/s en ${dec(d[0],1)} s; el cabrestante lo frena hasta 1 cm/s en ${dec(R.brakeT??0,0)} s y despliega 100 m en ${fmtT(d[1])}. Libración máxima: ${dec(R.maxPhi[1],0)}° al desplegar, ${dec(R.maxPhi[3],0)}° al recoger. La recogida dura ${fmtT(d[3])} y las mitades se enganchan a ${dec(R.contactV*100,1)} cm/s. Aflojamientos del cable después del resorte: ${R.slack}.`;}
+}
+function readP(){P.v0=+$("v0").value;P.lamd=+$("lamd").value;P.lamr=+$("lamr").value;P.hold=+$("hold").value;P.damp=$("damp").checked;
+  $("v0-o").textContent=dec(P.v0*100,0)+" cm/s";$("lamd-o").textContent=dec(P.lamd,2);$("lamr-o").textContent=dec(P.lamr,2);$("hold-o").textContent=dec(P.hold,1)+" órbitas";}
+function setP(q){$("v0").value=q.v0;$("lamd").value=q.lamd;$("lamr").value=q.lamr;$("hold").value=q.hold;$("damp").checked=q.damp;}
+function recompute(keep){readP();const fr=RUN&&keep?barFrac(S.t):0;RUN=simulate();prepCharts();buildBar();result();S.t=keep?Math.min(RUN.end,fracToT(fr)):0;draw();}
+function updPlay(){$("play").textContent=S.playing?"Pausa":(S.t>=RUN.end?"Repetir":"Reproducir");$("play").classList.toggle("primary",!S.playing);}
+$("play").onclick=()=>{if(!S.playing&&S.t>=RUN.end)S.t=0;S.playing=!S.playing;updPlay();};
+$("scrub").addEventListener("input",e=>{S.t=fracToT(+e.target.value/10000);S.playing=false;updPlay();draw();});
+$("preset").addEventListener("change",e=>{setP(PRESETS[e.target.value]);recompute(false);S.playing=!reduce;updPlay();});
+["v0","lamd","lamr","hold","damp"].forEach(id=>$(id).addEventListener("input",()=>{readP();clearTimeout(S.tm);S.tm=setTimeout(()=>recompute(true),120);}));
+addEventListener("resize",()=>{clearTimeout(S.rz);S.rz=setTimeout(draw,80);});
+let last=performance.now();
+function frame(now){const dt=Math.min(0.1,(now-last)/1000);last=now;
+  if(S.playing&&RUN){S.t+=dt*speedAt(S.t);if(S.t>=RUN.end){S.t=RUN.end;S.playing=false;updPlay();}draw();}
+  requestAnimationFrame(frame);}
+setP(PRESETS.ok);recompute(false);updPlay();requestAnimationFrame(frame);
+})();
+</script>
+</body></html>
