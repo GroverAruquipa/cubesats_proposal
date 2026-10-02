@@ -38,3 +38,9 @@ inertial view of the spin cost, the thermal transient at the terminator with
 and without winch compensation, and the tension distribution among three
 cables, and what the two nadir cameras see (the upper camera images the lower half). It ports `src/dumbbell.py` to JavaScript (fixed-step RK4) for
 exploration only. Figures for the report still come from `cases/`.
+
+`interactive/concepto_camaras.html` is a 3D walkthrough for presenting the
+imaging concept: separation, vertical alignment, camera placement and
+pointing (both nadir, adjacent strips, fore/aft stereo), live camera views
+and the stereo pair. Schematic scale; camera tilt angles are the design
+values. Needs an internet connection (loads three.js from a CDN).
