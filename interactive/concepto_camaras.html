@@ -81,7 +81,7 @@ footer{margin-top:24px;font-size:13px;color:var(--muted);max-width:95ch}
 <div class="wrap">
   <div class="eyebrow">CUBICS 2026 · 6U que se separa en dos 3U unidos por tres cables · 550 km</div>
   <h1>Cómo fotografían la Tierra las dos mitades</h1>
-  <p class="sub">Recorre los siete pasos en orden. La escena 3D muestra dónde está cada cámara, hacia dónde apunta y qué zona del suelo cubre. Las dos ventanas de la derecha muestran en vivo lo que ve cada una.</p>
+  <p class="sub">Recorre los ocho pasos en orden. La escena 3D muestra dónde está cada cámara, hacia dónde apunta y qué zona del suelo cubre. Las dos ventanas de la derecha muestran en vivo lo que ve cada una.</p>
 
   <ol class="steps" id="steps"></ol>
 
@@ -106,6 +106,7 @@ footer{margin-top:24px;font-size:13px;color:var(--muted);max-width:95ch}
           <option value="nadir">Las dos al nadir</option>
           <option value="lateral">Franjas contiguas</option>
           <option value="stereo">Estéreo adelante y atrás</option>
+          <option value="gimbal">Cámaras orientables (rótula)</option>
         </select>
         <label class="chk"><input type="checkbox" id="lib"> Libración (exagerada)</label>
         <label class="chk"><input type="checkbox" id="follow" checked> Seguir al satélite</label>
@@ -141,7 +142,7 @@ footer{margin-top:24px;font-size:13px;color:var(--muted);max-width:95ch}
     </div>
   </div>
 
-  <footer>Escala esquemática: en la escena la órbita está a 60 unidades del suelo y las mitades a 14 unidades una de otra; en la realidad son 550 km y 100 m. Los satélites están agrandados y la Tierra es plana. Los ángulos de inclinación de las cámaras, 12° adelante y atrás o 7° de lado, son los reales del diseño, así que la geometría de las tomas es correcta.</footer>
+  <footer>Escala esquemática: en la escena la órbita está a 60 unidades del suelo y las mitades a 14 unidades una de otra; en la realidad son 550 km y 100 m. Los satélites están agrandados y la Tierra es plana. Los ángulos de las cámaras, 12° adelante y atrás, 7° de lado o hasta 30° con la rótula, son los reales del diseño, así que la geometría de las tomas es correcta.</footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -161,6 +162,8 @@ const SAT=1.7;          // satellites drawn enlarged
 const FOV=12;           // drawn camera field of view, degrees
 const STEREO=12;        // fore/aft tilt, degrees (real design value)
 const LATERAL=7;        // cross-track tilt so the two strips are adjacent at the drawn FOV
+const ZT=-18;           // lateral target: 18 units = 165 km off the ground track
+const GIMBAL_MAX=30;    // gimbal range, degrees off nadir
 const XSPAN=48;         // pass from -XSPAN to +XSPAN
 // real mission numbers
 const R_ALT=550e3, R_L=100, R_FOV=2*Math.atan(2.5e3/550e3), R_GSD=5, R_V=7585;
@@ -190,6 +193,7 @@ function heightAt(x,z){
   h+=1.0*Math.exp(-(((x+3.5)**2)/(2*2*2)+((z-2.5)**2)/(2*1.6*1.6)));           // shoulder
   h+=2.2*Math.exp(-(((x-38)**2)/(2*6*6)+((z+16)**2)/(2*5*5)));
   h+=2.8*Math.exp(-(((x+42)**2)/(2*7*7)+((z-14)**2)/(2*6*6)));
+  h+=4.0*Math.exp(-((x*x)/(2*1.6*1.6)+((z-ZT)**2)/(2*2.0*2.0)));          // lateral target hill
   h+=0.35*Math.sin(x*0.21+z*0.13)*Math.cos(z*0.17-x*0.05);
   return Math.max(0,h);
 }
@@ -235,6 +239,13 @@ const PEAK=new THREE.Vector3(0,heightAt(0,0),0);
 // target marker (main view only)
 const ring=new THREE.Mesh(new THREE.RingGeometry(2.6,3.0,64),new THREE.MeshBasicMaterial({color:0xF2C94C,transparent:true,opacity:.9,side:THREE.DoubleSide,depthTest:false}));
 ring.rotation.x=-Math.PI/2;ring.position.set(0,0.3,0);ring.renderOrder=5;ring.layers.set(1);scene.add(ring);
+const TGT2=new THREE.Vector3(0,heightAt(0,ZT),ZT);
+const ring2=new THREE.Mesh(new THREE.RingGeometry(2.6,3.0,64),new THREE.MeshBasicMaterial({color:0xF2C94C,transparent:true,opacity:.9,side:THREE.DoubleSide,depthTest:false}));
+ring2.rotation.x=-Math.PI/2;ring2.position.set(0,0.3,ZT);ring2.renderOrder=5;ring2.layers.set(1);scene.add(ring2);
+const flag2=new THREE.Mesh(new THREE.ConeGeometry(0.5,1.4,16),new THREE.MeshBasicMaterial({color:0xF2C94C}));flag2.rotation.x=Math.PI;flag2.position.copy(TGT2).add(new THREE.Vector3(0,1.6,0));flag2.layers.set(1);scene.add(flag2);
+const REACH=H0*Math.tan(GIMBAL_MAX*Math.PI/180);
+const band=new THREE.Mesh(new THREE.PlaneGeometry(260,2*REACH),new THREE.MeshBasicMaterial({color:0x66D9E8,transparent:true,opacity:.24,depthTest:false,side:THREE.DoubleSide}));band.rotation.x=-Math.PI/2;band.position.set(0,0.4,0);band.renderOrder=3;band.layers.set(1);scene.add(band);
+const bandEdges=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-130,0.45,REACH),new THREE.Vector3(130,0.45,REACH),new THREE.Vector3(-130,0.45,-REACH),new THREE.Vector3(130,0.45,-REACH)]),new THREE.LineDashedMaterial({color:0x66D9E8,dashSize:2,gapSize:1.5,depthTest:false}));bandEdges.computeLineDistances();bandEdges.renderOrder=3;bandEdges.layers.set(1);scene.add(bandEdges);
 const flag=new THREE.Mesh(new THREE.ConeGeometry(0.5,1.4,16),new THREE.MeshBasicMaterial({color:0xF2C94C}));flag.rotation.x=Math.PI;flag.position.copy(PEAK).add(new THREE.Vector3(0,1.6,0));flag.layers.set(1);scene.add(flag);
 
 // ---------- satellites ----------
@@ -247,7 +258,9 @@ function makeHalf(color){
   const panels=[];for(const s of[-1,1]){const p=new THREE.Mesh(new THREE.BoxGeometry(0.55,1.8,0.03),pm);p.position.set(0,0,s*0.95);p.rotation.x=Math.PI/2*0;p.geometry=new THREE.BoxGeometry(0.55,0.03,1.3);p.position.set(0,0.3,s*0.95);g.add(p);panels.push(p);}
   const lens=new THREE.Mesh(new THREE.CylinderGeometry(0.13,0.16,0.28,20),new THREE.MeshStandardMaterial({color:0x111418,metalness:.4,roughness:.3}));g.add(lens);
   const glass=new THREE.Mesh(new THREE.CircleGeometry(0.11,20),new THREE.MeshBasicMaterial({color}));g.add(glass);
-  return{g,panels,lens,glass,color};
+  const gm=new THREE.MeshStandardMaterial({color:0xD9DEE3,metalness:.6,roughness:.3});
+  const outer=new THREE.Mesh(new THREE.TorusGeometry(0.27,0.025,10,40),gm);const inner=new THREE.Mesh(new THREE.TorusGeometry(0.21,0.025,10,40),gm);g.add(outer);g.add(inner);
+  return{g,panels,lens,glass,color,outer,inner};
 }
 const pair=new THREE.Group();scene.add(pair);
 const A=makeHalf(COL_A), B=makeHalf(COL_B); // A lower, B upper
@@ -285,7 +298,7 @@ const rayA=makeRay(COL_A), rayB=makeRay(COL_B);
 
 // ---------- state ----------
 const S={step:0,mode:"nadir",x:-XSPAN,playing:false,L:LSEP,Ltarget:LSEP,lib:false,t:0,arrows:false,cones:true,
-  shots:[null,null],blink:0};
+  shots:[null,null],blink:0,gdir:{A:new THREE.Vector3(0,-1,0),B:new THREE.Vector3(0,-1,0)},galpha:{A:null,B:null}};
 
 function camDirLocal(which){ // camera boresight in the pair frame (x along-track, y up, z cross-track)
   const m=S.mode;
@@ -301,6 +314,8 @@ function placeHalf(h,yLocal,dirLocal,isUpper){
   const lp=new THREE.Vector3(0.18,-1.0-0.12,-0.18);
   h.lens.position.copy(lp);h.lens.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dirLocal.clone().negate());
   h.glass.position.copy(lp).addScaledVector(dirLocal,0.145);h.glass.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),dirLocal);
+  const gim=S.mode==="gimbal";h.outer.visible=h.inner.visible=gim;
+  if(gim){h.outer.position.copy(lp);h.outer.rotation.set(Math.PI/2,0,0);h.inner.position.copy(lp);h.inner.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),dirLocal);}
   const stow=S.L<2.0*SAT+0.3;h.panels.forEach((p,i)=>{p.scale.set(1,1,stow?0.05:1);p.position.z=(i?1:-1)*(stow?0.32:0.95);});
 }
 function lensWorld(h){const v=new THREE.Vector3();h.glass.getWorldPosition(v);return v;}
@@ -325,7 +340,7 @@ function updateCone(cone,vc,origin,dir,show){
 let prevHit={A:null,B:null};
 function tryCapture(which,hit,origin,dir){
   const p=prevHit[which];prevHit[which]=hit.clone();
-  if(!p||S.shots[which==="A"?0:1])return false;
+  if(!p||S.shots[which==="A"?0:1]||S.mode==="gimbal")return false;
   const r=(origin.y/Math.max(0.05,-dir.y))*Math.tan(FOV/2*DEG);
   if(p.x<0&&hit.x>=0&&Math.abs(hit.z)<r*0.8){
     const k=which==="A"?0:1;S.shots[k]={x:S.x,origin:origin.clone(),mode:S.mode};
@@ -334,12 +349,27 @@ function tryCapture(which,hit,origin,dir){
   }
   return false;
 }
+// gimbal: camera A looks at the target while it is ahead, B while it is behind; photos at +12 deg and -12 deg along-track
+function gimbalAim(which,o){
+  const r=TGT2.clone().sub(o);const off=Math.acos(Math.min(1,-r.y/r.length()))/DEG;const along=Math.atan2(r.x,-r.y)*180/Math.PI;
+  const tracking=off<=GIMBAL_MAX&&(which==="A"?along>=0:along<=0);
+  const rest=new THREE.Vector3(which==="A"?Math.sin(STEREO*DEG):-Math.sin(STEREO*DEG),-Math.cos(STEREO*DEG),0); // idle: 12 deg fore (A) or aft (B), clear of the other half
+  return{dir:tracking?r.normalize():rest,along,tracking};
+}
+function gimbalCapture(which,along,origin){
+  const k=which==="A"?0:1;const prev=S.galpha[which];S.galpha[which]=along;
+  if(prev===null||S.shots[k])return false;
+  const th=which==="A"?STEREO:-STEREO;
+  if(prev>th&&along<=th){S.shots[k]={x:S.x,origin:origin.clone(),mode:"gimbal"};
+    const ray=which==="A"?rayA:rayB;ray.l.geometry.setFromPoints([origin,TGT2]);ray.l.computeLineDistances();ray.l.visible=true;ray.s.position.copy(origin);ray.s.visible=true;return true;}
+  return false;
+}
 function copyPhoto(k){
   const src=k===0?$("camA"):$("camB");const dst=$(k===0?"ph1":"ph2");const g=dst.getContext("2d");g.drawImage(src,0,0,dst.width,dst.height);
   const t=xToRealTime(S.shots[k].x);$(k===0?"cap1":"cap2").textContent=`tomada en t = ${t>=0?"+":""}${t.toFixed(1).replace(".",",")} s respecto al paso sobre el cerro`;
   updateFacts();
 }
-function resetShots(){S.shots=[null,null];prevHit={A:null,B:null};[rayA,rayB].forEach(r=>{r.l.visible=false;r.s.visible=false;});
+function resetShots(){S.shots=[null,null];prevHit={A:null,B:null};S.galpha={A:null,B:null};[rayA,rayB].forEach(r=>{r.l.visible=false;r.s.visible=false;});
   for(const id of["ph1","ph2","ph3"]){const c=$(id),g=c.getContext("2d");g.clearRect(0,0,c.width,c.height);}
   $("cap1").textContent="Pendiente: pasa sobre el cerro.";$("cap2").textContent="Pendiente.";updateFacts();}
 // scene x -> real seconds: in stereo the drawn baseline maps to the real 234 km
@@ -357,6 +387,13 @@ function updateFacts(){
   }else if(m==="lateral"){
     rows.push(["Apuntamiento",`A al nadir, B ${LATERAL}° de lado (real: 0,47°)`],["Ancho cubierto entre las dos","≈ 9,5 km con 10 % de solape"],["La mitad inferior en la foto de B","fuera del campo"],["Relación base/altura (B/H)","0: no ven el mismo punto"]);
     v=`<b class="good">Doble cobertura, sin sombras.</b> Cada cámara fotografía una franja distinta. Sirve para mapas en 2D más anchos, no para 3D.`;cls="good";
+  }else if(m==="gimbal"){
+    const xt=R_ALT*Math.tan(16.7*DEG),B=2*R_ALT*Math.tan(STEREO*DEG),off=Math.atan(Math.hypot(Math.tan(STEREO*DEG),Math.tan(16.7*DEG)))/DEG,rng=R_ALT/Math.cos(off*DEG),bh=B/rng;
+    const reach=R_ALT*Math.tan(GIMBAL_MAX*DEG)/1e3;
+    rows.push(["Apuntamiento",`rótula de 2 ejes, ±${GIMBAL_MAX}°`],["Franja alcanzable",`±${Math.round(reach)} km de la traza (${Math.round(2*reach)} km)`],["Objetivo de la escena",`a ${Math.round(xt/1e3)} km de la traza`],
+      ["Inclinación en cada toma",`${off.toFixed(1).replace(".",",")}° respecto al nadir`],["Relación base/altura (B/H)",bh.toFixed(2).replace(".",",")],
+      ["Error en altura, cámara de 20 m/px",`≈ ${Math.round(0.3*20/bh)} m`],["Error en altura, telescopio de 5 m/px",`≈ ${(0.3*5/bh).toFixed(1).replace(".",",")} m`],["Volver a ver un lugar","2–3 días a 45–50° · ~4 días en el ecuador"]);
+    v=`<b class="good">3D de un lugar elegido.</b> La rótula apunta la cámara fuera de la traza sin girar el satélite, así que los cables no se ven afectados. A fotografía el objetivo al acercarse y B al alejarse, en la misma pasada.`;cls="good";
   }else{
     const bh=2*Math.tan(STEREO*DEG),B=R_ALT*bh,dt=B/R_V,sig=0.3*R_GSD/bh;
     rows.push(["Apuntamiento",`A ${STEREO}° adelante, B ${STEREO}° atrás`],["Distancia entre las dos tomas",`${(B/1e3).toFixed(0)} km`],["Tiempo entre fotos",`≈ ${dt.toFixed(0)} s`],["Relación base/altura (B/H)",bh.toFixed(2).replace(".",",")],["Error en altura del modelo 3D",`≈ ${sig.toFixed(1).replace(".",",")} m`],["Comparación: base de 100 m",`B/H = 1,8×10⁻⁴ · error ≈ ${Math.round(0.3*R_GSD/(R_L/R_ALT))} m`]);
@@ -380,6 +417,8 @@ const STEPS=[
   h:"Inclinar B hacia un lado",p:["La cámara B va montada con una inclinación fija hacia un lado de la trayectoria. Cubre la franja vecina y ya no ve a la mitad A.","Así se duplica el ancho fotografiado. Sirve para mapas en 2D, pero cada punto lo ve una sola cámara: no hay 3D."]},
  {t:"Estéreo adelante y atrás",view:"general",mode:"stereo",L:LSEP,x:-XSPAN,cones:true,arrows:false,play:true,
   h:"Para 3D: mirar el mismo cerro desde dos ángulos",p:["La cámara A mira 12° hacia adelante y la B 12° hacia atrás, fijas en la estructura. Al acercarse, A fotografía el cerro. Unos 31 s después, ya pasado, B fotografía el mismo cerro desde el otro lado.","Pulsa <b>Pasar sobre el objetivo</b> y observa cómo cada cono barre el cerro en momentos distintos."]},
+ {t:"Cámara orientable",view:"general",mode:"gimbal",L:LSEP,x:-XSPAN,cones:true,arrows:false,play:true,
+  h:"Una rótula dentro de cada mitad",p:["Cada cámara va montada en una rótula de dos ejes y puede mirar hasta 30° en cualquier dirección sin girar el satélite. La franja turquesa es lo que alcanza: unos 635 km de ancho en vez de 5 km.","El objetivo ahora está a 165 km de la traza. La cámara A lo sigue mientras se acerca y lo fotografía a 12° por delante; la B lo sigue al alejarse y lo fotografía a 12° por detrás. Mismo par estéreo, pero de un lugar elegido.","Para que quepa en un 3U conviene una cámara pequeña, de 20–30 m por píxel. Con 5 m por píxel el telescopio no gira entero: hace falta un espejo orientable."]},
  {t:"Reconstrucción 3D",view:"general",mode:"stereo",L:LSEP,x:XSPAN*0.6,cones:true,arrows:false,recon:true,
   h:"Dos fotos, dos ángulos, una altura",p:["Las líneas discontinuas unen cada toma con la cima del cerro. Se cruzan con un ángulo de unos 24°, como los dos ojos al mirar algo cercano.","En las fotos la cima se desplaza respecto al suelo. Ese desplazamiento, la paralaje, es lo que convierte las dos fotos en un modelo de alturas. La comparación alternada lo hace visible."]},
 ];
@@ -426,8 +465,13 @@ let lastX=S.x;const coneHit={A:new THREE.Vector3(),B:new THREE.Vector3()};
 function layout(){
   const phi=S.lib?6*DEG*Math.sin(S.t*0.9):0;
   pair.position.set(S.x,H0,0);pair.rotation.set(0,0,phi);
-  const dA=camDirLocal("A"),dB=camDirLocal("B");
+  let dA=camDirLocal("A"),dB=camDirLocal("B");
   placeHalf(A,-S.L/2,dA,false);placeHalf(B,S.L/2,dB,true);
+  let gA=null,gB=null;
+  if(S.mode==="gimbal"){pair.updateMatrixWorld(true);const inv=pair.quaternion.clone().invert();
+    gA=gimbalAim("A",lensWorld(A));gB=gimbalAim("B",lensWorld(B));
+    for(const[w,g]of[["A",gA],["B",gB]]){const want=g.dir.clone().applyQuaternion(inv);S.gdir[w].lerp(want,S.noRender?1:0.18).normalize();}
+    dA=S.gdir.A.clone();dB=S.gdir.B.clone();placeHalf(A,-S.L/2,dA,false);placeHalf(B,S.L/2,dB,true);}
   // cables between facing faces
   const pts=[];for(const a of anchorsLocal){pts.push(new THREE.Vector3(a.x*SAT,-S.L/2+SAT,a.z*SAT),new THREE.Vector3(a.x*SAT,S.L/2-SAT,a.z*SAT));}
   cables.geometry.setFromPoints(pts);cables.visible=S.L>2.0*SAT+0.3;
@@ -437,14 +481,19 @@ function layout(){
   const oA=lensWorld(A),oB=lensWorld(B),wA=dirWorld(dA),wB=dirWorld(dB);
   const deployed=S.L>2.0*SAT+0.3;
   const hA=updateCone(coneA,vcA,oA,wA,S.cones&&deployed),hB=updateCone(coneB,vcB,oB,wB,S.cones&&deployed);coneHit.A=hA;coneHit.B=hB;
-  const capA=deployed&&tryCapture("A",hA,oA,wA), capB=deployed&&tryCapture("B",hB,oB,wB);
+  let capA=deployed&&tryCapture("A",hA,oA,wA), capB=deployed&&tryCapture("B",hB,oB,wB);
+  if(S.mode==="gimbal"&&deployed){
+    // at the capture instant aim exactly at the target so the photo is centred
+    const cA=gimbalCapture("A",gA.along,oA),cB=gimbalCapture("B",gB.along,oB);
+    if(cA){vcA.lookAt(TGT2);}if(cB){vcB.lookAt(TGT2);}capA=capA||cA;capB=capB||cB;}
+  const gim=S.mode==="gimbal";ring2.visible=flag2.visible=band.visible=bandEdges.visible=gim;ring.visible=flag.visible=!gim;
   if(S.noRender&&!(capA||capB))return;
   if(deployed){RA.render(scene,vcA);RB.render(scene,vcB);}else{RA.clear();RB.clear();}
   if(capA)copyPhoto(0);if(capB)copyPhoto(1);
   const t=xToRealTime(S.x);
   $("clock").textContent=`t = ${t>=0?"+":""}${t.toFixed(0)} s (real)`;
   $("scrub").value=Math.round((S.x+XSPAN)/(2*XSPAN)*1000);
-  $("hud-mode").textContent={nadir:"cámaras: las dos al nadir",lateral:"cámaras: B inclinada de lado",stereo:"cámaras: A adelante 12°, B atrás 12°"}[S.mode];
+  $("hud-mode").textContent={nadir:"cámaras: las dos al nadir",lateral:"cámaras: B inclinada de lado",stereo:"cámaras: A adelante 12°, B atrás 12°",gimbal:"cámaras en rótula: ±30° en cualquier dirección"}[S.mode];
 }
 function resize(){
   const w=view.clientWidth,h=view.clientHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();
