@@ -79,9 +79,9 @@ footer{margin-top:24px;font-size:13px;color:var(--muted);max-width:95ch}
 </style>
 
 <div class="wrap">
-  <div class="eyebrow">CUBICS 2026 · A 6U that splits into two 3U halves joined by three tethers · 550 km</div>
+  <div class="eyebrow">CUBICS 2026 · A 6U split into two tethered 3U halves · 550 km</div>
   <h1>How the two halves photograph the Earth</h1>
-  <p class="sub">Go through the eight steps in order. The 3D scene shows where each camera is, where it points and which patch of ground it covers. The two windows on the right show what each camera sees, live.</p>
+  <p class="sub">Click through the eight steps to see how the two cameras photograph the ground.</p>
 
   <ol class="steps" id="steps"></ol>
 
@@ -89,13 +89,13 @@ footer{margin-top:24px;font-size:13px;color:var(--muted);max-width:95ch}
     <div>
       <div class="stage">
         <canvas id="view" aria-label="3D scene of the satellite pair above the terrain"></canvas>
-        <div class="err" id="err">The 3D engine could not be loaded. Reload the page with an internet connection.</div>
+        <div class="err" id="err">The 3D engine did not load. Reload with internet on.</div>
         <div class="hud"><span class="tag" id="hud-scale">schematic scale · real camera angles</span><span class="tag" id="hud-mode"></span></div>
         <div class="hud-r"><button id="v-general">Overview</button><button id="v-sats">Satellites</button><button id="v-ground">From the ground</button></div>
         <div class="legend3d">
-          <span><i class="dot" style="background:var(--camA)"></i>Camera A, half A (lower)</span>
-          <span><i class="dot" style="background:var(--camB)"></i>Camera B, half B (upper)</span>
-          <span><i class="dot" style="background:#F2C94C"></i>target: the hill</span>
+          <span><i class="dot" style="background:var(--camA)"></i>Camera A (lower half)</span>
+          <span><i class="dot" style="background:var(--camB)"></i>Camera B (upper half)</span>
+          <span><i class="dot" style="background:#F2C94C"></i>target hill</span>
           <span><i class="dot" style="background:#E9EEF2"></i>tethers</span>
         </div>
       </div>
@@ -116,12 +116,12 @@ footer{margin-top:24px;font-size:13px;color:var(--muted);max-width:95ch}
     <div class="side">
       <div class="card story" id="story"></div>
       <div class="card">
-        <h3>What each camera sees now</h3>
+        <h3>What each camera sees</h3>
         <div class="camviews">
           <div class="cv"><div class="lbl"><i class="dot" style="background:var(--camA)"></i>Camera A</div><canvas id="camA"></canvas></div>
           <div class="cv"><div class="lbl"><i class="dot" style="background:var(--camB)"></i>Camera B</div><canvas id="camB"></canvas></div>
         </div>
-        <p class="note" style="margin:8px 0 0">The field of view is drawn at 12° so that it is visible. The real one is 0.52° (a 5 km swath on the ground).</p>
+        <p class="note" style="margin:8px 0 0">The view is drawn at 12° so you can see it (real: 0.52°).</p>
       </div>
     </div>
   </div>
@@ -130,19 +130,19 @@ footer{margin-top:24px;font-size:13px;color:var(--muted);max-width:95ch}
     <div class="card">
       <h3>Photos of the target</h3>
       <div class="photos">
-        <div class="photo"><div class="lbl" style="color:var(--camA)">Photo 1 · camera A</div><canvas id="ph1" width="320" height="320"></canvas><div class="cap" id="cap1">Pending: fly over the hill.</div></div>
+        <div class="photo"><div class="lbl" style="color:var(--camA)">Photo 1 · camera A</div><canvas id="ph1" width="320" height="320"></canvas><div class="cap" id="cap1">Waiting for the pass.</div></div>
         <div class="photo"><div class="lbl" style="color:var(--camB)">Photo 2 · camera B</div><canvas id="ph2" width="320" height="320"></canvas><div class="cap" id="cap2">Pending.</div></div>
-        <div class="photo"><div class="lbl">Blink comparison</div><canvas id="ph3" width="320" height="320"></canvas><div class="cap" id="cap3">Switches between the two photos. If the hill shifts relative to the ground, the pair holds 3D information.</div></div>
+        <div class="photo"><div class="lbl">Blink comparison</div><canvas id="ph3" width="320" height="320"></canvas><div class="cap" id="cap3">Flips between the photos. If the hill shifts, there is 3D.</div></div>
       </div>
     </div>
     <div class="card">
-      <h3>With the real mission numbers</h3>
+      <h3>Real mission numbers</h3>
       <table class="facts" id="facts"></table>
       <div class="verdict" id="verdict"></div>
     </div>
   </div>
 
-  <footer>Schematic scale: in the scene the orbit is 60 units above the ground and the halves are 14 units apart. In reality these are 550 km and 100 m. The satellites are enlarged and the Earth is flat. The camera angles (12° fore and aft, 7° to the side, or up to 30° with the gimbal) are the real design values, so the imaging geometry is correct.</footer>
+  <footer>Not to scale: distances are shrunk and the satellites enlarged, but the camera angles are real.</footer>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -366,12 +366,12 @@ function gimbalCapture(which,along,origin){
 }
 function copyPhoto(k){
   const src=k===0?$("camA"):$("camB");const dst=$(k===0?"ph1":"ph2");const g=dst.getContext("2d");g.drawImage(src,0,0,dst.width,dst.height);
-  const t=xToRealTime(S.shots[k].x);$(k===0?"cap1":"cap2").textContent=`taken at t = ${t>=0?"+":""}${t.toFixed(1)} s relative to the pass over the hill`;
+  const t=xToRealTime(S.shots[k].x);$(k===0?"cap1":"cap2").textContent=`t = ${t>=0?"+":""}${t.toFixed(1)} s from the hill`;
   updateFacts();
 }
 function resetShots(){S.shots=[null,null];prevHit={A:null,B:null};S.galpha={A:null,B:null};[rayA,rayB].forEach(r=>{r.l.visible=false;r.s.visible=false;});
   for(const id of["ph1","ph2","ph3"]){const c=$(id),g=c.getContext("2d");g.clearRect(0,0,c.width,c.height);}
-  $("cap1").textContent="Pending: fly over the hill.";$("cap2").textContent="Pending.";updateFacts();}
+  $("cap1").textContent="Waiting for the pass.";$("cap2").textContent="Pending.";updateFacts();}
 // scene x -> real seconds: in stereo the drawn baseline maps to the real 234 km
 function xToRealTime(x){const unitKm=(R_ALT*(2*Math.tan(STEREO*DEG)))/1e3/(H0*2*Math.tan(STEREO*DEG));return x*unitKm*1e3/R_V;}
 
@@ -379,25 +379,23 @@ function xToRealTime(x){const unitKm=(R_ALT*(2*Math.tan(STEREO*DEG)))/1e3/(H0*2*
 function updateFacts(){
   const m=S.mode;let rows=[],v="",cls="";
   const fovDeg=R_FOV/DEG;
-  rows.push(["Orbit altitude","550 km"],["Separation between the halves","100 m, vertical"],["Field of view of each camera",fovDeg.toFixed(2)+"° · 5 km swath"]);
+  rows.push(["Orbit","550 km"]);
   if(m==="nadir"){
     const occ=(0.1/R_L)/R_FOV;
-    rows.push(["Pointing","A and B at nadir"],["Half A (lower) in B's photo",`${Math.round(0.1/R_L/(R_GSD/R_ALT))} × ${Math.round(0.1/R_L/(R_GSD/R_ALT))} px, ${(occ*occ*100).toFixed(1)}% of the frame area`],["Angle between the two views of the hill","≈ 0°"],["Base-to-height ratio (B/H)","≈ 0"]);
-    v=`<b class="bad">No 3D, and a blocked view.</b> Both cameras see the same ground from almost the same point, one above the other. Camera B also has the lower half in the centre of its image.`;cls="bad";
+    rows.push(["Gap between halves","100 m"],["Half A in B's photo",`${Math.round(0.1/R_L/(R_GSD/R_ALT))} × ${Math.round(0.1/R_L/(R_GSD/R_ALT))} px (${(occ*occ*100).toFixed(1)}% of frame)`],["Viewing angle","≈ 0°"],["B/H","≈ 0"]);
+    v=`<b class="bad">No 3D, and a blocked view.</b> Both see the same ground, and B sees half A.`;cls="bad";
   }else if(m==="lateral"){
-    rows.push(["Pointing",`A at nadir, B ${LATERAL}° to the side (real: 0.47°)`],["Combined width covered","≈ 9.5 km with 10% overlap"],["Half A (lower) in B's photo","outside the field of view"],["Base-to-height ratio (B/H)","0: they do not see the same point"]);
-    v=`<b class="good">Double coverage, no blocked view.</b> Each camera photographs a different strip. This is useful for wider 2D maps, not for 3D.`;cls="good";
+    rows.push(["Pointing",`B tilted ${LATERAL}° (real: 0.47°)`],["Width covered","≈ 9.5 km"],["Half A in B's photo","not visible"],["B/H","0"]);
+    v=`<b class="good">Double coverage, no blocked view.</b> Wider maps, but no 3D.`;cls="good";
   }else if(m==="gimbal"){
     const xt=R_ALT*Math.tan(16.7*DEG),B=2*R_ALT*Math.tan(STEREO*DEG),off=Math.atan(Math.hypot(Math.tan(STEREO*DEG),Math.tan(16.7*DEG)))/DEG,rng=R_ALT/Math.cos(off*DEG),bh=B/rng;
     const reach=R_ALT*Math.tan(GIMBAL_MAX*DEG)/1e3;
-    rows.push(["Pointing",`2-axis gimbal, ±${GIMBAL_MAX}°`],["Reachable swath",`±${Math.round(reach)} km from the ground track (${Math.round(2*reach)} km)`],["Target in the scene",`${Math.round(xt/1e3)} km from the ground track`],
-      ["Off-nadir angle at each shot",`${off.toFixed(1)}° off nadir`],["Base-to-height ratio (B/H)",bh.toFixed(2)],
-      ["Height error, 20 m/px camera",`≈ ${Math.round(0.3*20/bh)} m`],["Height error, 5 m/px telescope",`≈ ${(0.3*5/bh).toFixed(1)} m`],["Revisit time for a site","2–3 days at 45–50° latitude · ~4 days at the equator"]);
-    v=`<b class="good">3D of a chosen site.</b> The gimbal points the camera away from the ground track without rotating the satellite, so the tethers are not affected. A photographs the target on approach and B as it moves away, in the same pass.`;cls="good";
+    rows.push(["Reach",`${Math.round(2*reach)} km wide`],["B/H",bh.toFixed(2)],["Height error",`≈ ${Math.round(0.3*20/bh)} m (20 m/px)`],["Revisit","2 to 4 days"]);
+    v=`<b class="good">3D of a chosen site.</b> The cameras aim without turning the satellite.`;cls="good";
   }else{
     const bh=2*Math.tan(STEREO*DEG),B=R_ALT*bh,dt=B/R_V,sig=0.3*R_GSD/bh;
-    rows.push(["Pointing",`A ${STEREO}° forward, B ${STEREO}° aft`],["Distance between the two shots",`${(B/1e3).toFixed(0)} km`],["Time between photos",`≈ ${dt.toFixed(0)} s`],["Base-to-height ratio (B/H)",bh.toFixed(2)],["Height error of the 3D model",`≈ ${sig.toFixed(1)} m`],["For comparison: 100 m baseline",`B/H = 1.8×10⁻⁴ · error ≈ ${Math.round(0.3*R_GSD/(R_L/R_ALT))} m`]);
-    v=`<b class="good">3D is possible.</b> The angle between the two photos comes from the satellite moving along its orbit, about 230 km in 31 s. It does not come from the 100 m separation between the halves.`;cls="good";
+    rows.push(["Pointing",`A ${STEREO}° fore, B ${STEREO}° aft`],["Time between photos",`≈ ${dt.toFixed(0)} s`],["B/H",bh.toFixed(2)],["Height error",`≈ ${sig.toFixed(1)} m`]);
+    v=`<b class="good">3D is possible.</b> The angle comes from orbital motion, not the 100 m tether.`;cls="good";
   }
   $("facts").innerHTML=rows.map(([k,x])=>`<tr><th>${k}</th><td>${x}</td></tr>`).join("");
   const el=$("verdict");el.innerHTML=v;el.className="verdict "+cls;
@@ -406,21 +404,21 @@ function updateFacts(){
 // ---------- steps ----------
 const STEPS=[
  {t:"Stowed",view:"sats",mode:"nadir",L:2.0*SAT,x:-6,cones:false,arrows:false,
-  h:"It leaves the rocket as a single 6U",p:["The two 3U halves travel joined together, with the tethers wound on the winches and the solar panels folded. Each half carries its camera on its bottom face.","Half <b style=\"color:var(--camA)\">A</b> is the lower one, half <b style=\"color:var(--camB)\">B</b> the upper one."]},
+  h:"It launches as one 6U",p:["The two halves travel joined, tethers wound up. Half <b style=\"color:var(--camA)\">A</b> (lower) and half <b style=\"color:var(--camB)\">B</b> (upper) each carry a camera."]},
  {t:"Separation",view:"sats",mode:"nadir",L:LSEP,x:-6,cones:false,arrows:false,anim:true,
-  h:"A spring pushes them apart and the tethers pay out",p:["A stacer spring pushes the halves apart. The winches brake the tethers until the halves are 100 m apart. The solar panels deploy.","The separation is shortened in the scene. A real 100 m next to a 550 km altitude would not fit in the drawing."]},
+  h:"A spring pushes the halves apart",p:["The tethers unwind until the halves are 100 m apart. The scene shortens this gap."]},
  {t:"Why vertical",view:"general",mode:"nadir",L:LSEP,x:-6,cones:false,arrows:true,
-  h:"One above the other, always",p:["Gravity pulls slightly harder on the lower half and slightly less on the upper half (yellow arrows). This difference, the gravity gradient, keeps the tethers taut and the pair aligned with the vertical without using any power.","That is why the halves cannot fly side by side. In a horizontal layout the tethers go slack and the system swings back to vertical on its own."]},
+  h:"One above the other, always",p:["Gravity pulls a bit harder on the lower half (yellow arrows). This keeps the tethers taut and the pair vertical, with no power."]},
  {t:"Both at nadir",view:"general",mode:"nadir",L:LSEP,x:-XSPAN,cones:true,arrows:false,play:true,
-  h:"Problem: the upper camera sees the lower half",p:["With both cameras looking straight down, the two cones overlap and cover the same ground.","Look at the camera B window. Half A and the tethers appear in the centre. The two photos are almost identical, so they are no use for 3D."]},
+  h:"Problem: B sees the lower half",p:["Both cameras look straight down at the same ground. Camera B sees half A, and the two photos are nearly identical."]},
  {t:"Adjacent strips",view:"general",mode:"lateral",L:LSEP,x:-XSPAN,cones:true,arrows:false,play:true,
-  h:"Tilt B to one side",p:["Camera B is mounted with a fixed tilt to one side of the ground track. It covers the neighbouring strip and no longer sees half A.","This doubles the imaged width. It works for 2D maps, but each point is seen by only one camera, so there is no 3D."]},
+  h:"Tilt B to one side",p:["B now photographs the next strip and no longer sees half A. Wider maps, but no 3D."]},
  {t:"Fore/aft stereo",view:"general",mode:"stereo",L:LSEP,x:-XSPAN,cones:true,arrows:false,play:true,
-  h:"For 3D: view the same hill from two angles",p:["Camera A looks 12° forward and camera B looks 12° aft, both fixed to the structure. On approach, A photographs the hill. About 31 s later, once past it, B photographs the same hill from the other side.","Press <b>Fly over the target</b> and watch each cone sweep across the hill at a different moment."]},
+  h:"See the hill from two angles",p:["A looks 12° forward, B 12° back. A photographs the hill first, B about 31 s later. Press <b>Fly over the target</b>."]},
  {t:"Gimbal camera",view:"general",mode:"gimbal",L:LSEP,x:-XSPAN,cones:true,arrows:false,play:true,
-  h:"A gimbal inside each half",p:["Each camera sits on a two-axis gimbal and can look up to 30° in any direction without rotating the satellite. The turquoise band shows its reach: about 635 km wide instead of 5 km.","The target is now 165 km from the ground track. Camera A tracks it on approach and photographs it 12° ahead. Camera B tracks it as it recedes and photographs it 12° behind. The result is the same kind of stereo pair, but of a chosen site.","To fit in a 3U, a small camera with 20–30 m per pixel is the better choice. At 5 m per pixel the whole telescope cannot be rotated, so a steerable mirror is needed."]},
+  h:"A gimbal inside each half",p:["Each camera can tilt up to 30° without turning the satellite (turquoise band). Now it can take a stereo pair of a site 165 km to the side."]},
  {t:"3D reconstruction",view:"general",mode:"stereo",L:LSEP,x:XSPAN*0.6,cones:true,arrows:false,recon:true,
-  h:"Two photos, two angles, one height",p:["The dashed lines join each shot position to the hilltop. They cross at an angle of about 24°, like two eyes looking at something nearby.","Between the photos the hilltop shifts relative to the ground. This shift is called parallax, and it is what turns the stereo pair into a height model. The blink comparison makes it visible."]},
+  h:"Two photos, two angles, one height",p:["The dashed lines meet at the hilltop at about 24°. How far the hill shifts between photos (see the blink view) gives its height."]},
 ];
 function buildSteps(){
   $("steps").innerHTML=STEPS.map((s,i)=>`<li><button data-i="${i}"><span class="n">${i+1}</span>${s.t}</button></li>`).join("");
@@ -493,7 +491,7 @@ function layout(){
   const t=xToRealTime(S.x);
   $("clock").textContent=`t = ${t>=0?"+":""}${t.toFixed(0)} s (real)`;
   $("scrub").value=Math.round((S.x+XSPAN)/(2*XSPAN)*1000);
-  $("hud-mode").textContent={nadir:"cameras: both at nadir",lateral:"cameras: B tilted to the side",stereo:"cameras: A 12° forward, B 12° aft",gimbal:"gimbal cameras: ±30° in any direction"}[S.mode];
+  $("hud-mode").textContent={nadir:"both at nadir",lateral:"B tilted sideways",stereo:"A 12° fore, B 12° aft",gimbal:"gimbal: ±30°"}[S.mode];
 }
 function resize(){
   const w=view.clientWidth,h=view.clientHeight;R.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix();

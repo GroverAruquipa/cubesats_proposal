@@ -31,27 +31,27 @@ p{margin:4px 0 0}
 <div class="wrap">
   <div class="eyebrow">CUBICS 2026 · Stream 1 · a 6U that splits into two 3U halves joined by tethers</div>
   <h1>Tethered 6U simulators</h1>
-  <p class="sub">Three interactive simulators, in the order that best explains the mission: first the imaging concept, then the tether mechanism, and finally the technical analysis.</p>
+  <p class="sub">Three interactive simulators. Open them in this order.</p>
   <ol>
     <li><span class="n">1</span>
       <h2>How the two halves photograph the Earth</h2>
-      <p>A 3D scene in eight steps: launch, separation, why the pair hangs vertically, where each camera sits and where it points. It compares both cameras at nadir, adjacent strips, fore/aft stereo and gimballed cameras, with live camera views and the two photos used for 3D reconstruction.</p>
-      <div class="facts"><span>A 12° forward, B 12° aft</span><span>B/H = 0.43</span><span>31 s between photos</span><span>height error ≈ 3.5 m</span><span>±30° gimbal: 635 km reachable</span></div>
-      <div class="go"><a href="camera_concept.html" target="_blank" rel="noopener">Open the 3D simulator</a><code>interactive/en/camera_concept.html</code></div>
+      <p>Where each camera points and how two photos give a 3D view.</p>
+      <div class="facts"><span>A 12° forward, B 12° aft</span><span>B/H = 0.43</span><span>31 s between photos</span></div>
+      <div class="go"><a href="camera_concept.html" >Open the 3D simulator</a><code>interactive/en/camera_concept.html</code></div>
     </li>
     <li><span class="n">2</span>
       <h2>Spring, deployment and retrieval</h2>
-      <p>The full mechanism cycle with the orbital physics of the pair: a spring separates the halves, winches brake and deploy 100 m, the system holds, the tethers are reeled in and magnets dock the halves. Includes the cases where retrieval fails.</p>
-      <div class="facts"><span>spring 0.2 m/s</span><span>deployment 99 min</span><span>retrieval 5.9 h</span><span>no control: tumbles at 36 m</span></div>
-      <div class="go"><a href="mechanism.html" target="_blank" rel="noopener">Open the mechanism simulator</a><code>interactive/en/mechanism.html</code></div>
+      <p>Spring, deployment to 100 m, retrieval and docking.</p>
+      <div class="facts"><span>spring 0.2 m/s</span><span>deployment 99 min</span><span>retrieval 5.9 h</span></div>
+      <div class="go"><a href="mechanism.html" >Open the mechanism simulator</a><code>interactive/en/mechanism.html</code></div>
     </li>
     <li><span class="n">3</span>
       <h2>Tethered dumbbell simulator</h2>
-      <p>Five analysis scenes: deployment with free libration against the radial model, the cost of spinning in the inertial view, the thermal transient with and without compensation, tension sharing among three tethers, and what each camera sees.</p>
-      <div class="facts"><span>T_gg(100 m) = 0.719 mN</span><span>19 slack events uncompensated</span><span>first tether slack at 0.0062°</span><span>max torque 5.1×10⁻⁵ N·m</span></div>
-      <div class="go"><a href="simulator.html" target="_blank" rel="noopener">Open the analysis simulator</a><code>interactive/en/simulator.html</code></div>
+      <p>The physics behind the design, in five scenes.</p>
+      <div class="facts"><span>tension 0.7 mN at 100 m</span><span>thermal compensation: 0 slack events</span><span>torque 5% of a wheel</span></div>
+      <div class="go"><a href="simulator.html" >Open the analysis simulator</a><code>interactive/en/simulator.html</code></div>
     </li>
   </ol>
-  <p class="note">All three use the same model of the pair in a circular orbit at 550 km, checked by the tests in <code>tests/test_reference.py</code>. Scenes use a schematic scale where needed so things are visible; angles and figures are the design values. The 3D simulator needs an internet connection.</p>
+  <p class="note">Schematic scale, real design numbers. The 3D page needs internet.</p>
 </div>
 </body></html>

@@ -75,10 +75,10 @@ footer{margin-top:22px;font-size:13px;color:var(--muted);max-width:100ch}
 <div class="wrap">
   <div class="eyebrow">CUBICS 2026 · tether mechanism · 2 × 3U · 550 km · m = 4 kg per half</div>
   <h1>Spring, Deployment and Retrieval</h1>
-  <p class="sub">A full cycle simulated with the orbital physics of the pair. The stacer spring pushes the halves apart. The winches brake and then deploy 100 m of tether. The system holds at full length. The winches retrieve the tether, and magnets dock the halves again. Left: the mechanism in detail. Right: the pair as seen in orbit.</p>
+  <p class="sub">A spring splits the satellite, a 100 m tether pays out, then reels back in.</p>
 
   <div class="phasebar" id="phasebar"><div class="playhead" id="playhead"></div></div>
-  <p class="phasenote">Each phase has the same width on the bar, although phases last from seconds to hours. Click a phase to jump to it.</p>
+  <p class="phasenote">Click a phase to jump to it.</p>
 
   <div class="main">
     <div>
@@ -121,13 +121,13 @@ footer{margin-top:22px;font-size:13px;color:var(--muted);max-width:100ch}
   <div class="result" id="result"></div>
 
   <div class="charts">
-    <div class="chart"><h4>Separation: first 30 s</h4><div class="legend"><span><i class="sw" style="background:var(--p-spring)"></i>gap between faces [cm]</span><span><i class="sw" style="background:var(--p-deploy)"></i>speed L′ [cm/s]</span></div><canvas id="ch1"></canvas></div>
-    <div class="chart"><h4>Tether length over the full cycle [m, log scale]</h4><div class="legend"><span><i class="sw" style="background:var(--fg)"></i>L</span><span>background: phase</span></div><canvas id="ch2"></canvas></div>
-    <div class="chart"><h4>Libration φ [°]</h4><div class="legend"><span><i class="sw" style="background:var(--fg)"></i>φ</span><span><i class="sw" style="background:var(--bad)"></i>±80°: the tether tumbles</span></div><canvas id="ch3"></canvas></div>
-    <div class="chart"><h4>Docking: last 150 s</h4><div class="legend"><span><i class="sw" style="background:var(--p-dock)"></i>gap [cm]</span><span><i class="sw" style="background:var(--mag)"></i>magnet force [mN]</span></div><canvas id="ch4"></canvas></div>
+    <div class="chart"><h4>First 30 s</h4><div class="legend"><span><i class="sw" style="background:var(--p-spring)"></i>gap [cm]</span><span><i class="sw" style="background:var(--p-deploy)"></i>speed [cm/s]</span></div><canvas id="ch1"></canvas></div>
+    <div class="chart"><h4>Tether length [m, log]</h4><div class="legend"><span><i class="sw" style="background:var(--fg)"></i>L</span><span>shading: phase</span></div><canvas id="ch2"></canvas></div>
+    <div class="chart"><h4>Swing angle [°]</h4><div class="legend"><span><i class="sw" style="background:var(--fg)"></i>φ</span><span><i class="sw" style="background:var(--bad)"></i>±80°: tumble</span></div><canvas id="ch3"></canvas></div>
+    <div class="chart"><h4>Docking, last 150 s</h4><div class="legend"><span><i class="sw" style="background:var(--p-dock)"></i>gap [cm]</span><span><i class="sw" style="background:var(--mag)"></i>magnets [mN]</span></div><canvas id="ch4"></canvas></div>
   </div>
 
-  <footer>Model: two point masses in a 550 km circular orbit, in-plane libration, massless tether that can only pull. Linear stacer spring with a 15 cm stroke. The winch tracks a reference speed, with feedforward of the equilibrium tension and a maximum tension of 50 mN. Libration damping lengthens or shortens the tether in phase with φ′. The magnets are two 0.8 A·m² coils with dipole attraction, F = 3μ₀m²/(2πd⁴). The mechanism detail is a schematic: drums, guides and coils are not an engineering design.</footer>
+  <footer>Simple model: two point masses in a 550 km orbit joined by a tether. The mechanism drawing is a sketch, not a design.</footer>
 </div>
 
 <script>
@@ -148,15 +148,15 @@ const DRUM_CORE=0.006, DRUM_FULL=0.011; // winch drum radii, m
 const DEG=180/Math.PI;
 const PH=[
  {k:"spring",name:"Spring",col:"--p-spring",speed:0.5,
-  story:"The hold-down cord that keeps the halves together is cut. The stacer spring extends 15 cm in just over one second and pushes them apart. The tethers pay out from the drums with almost no braking."},
+  story:"A cord is cut and a spring pushes the two halves apart in about one second."},
  {k:"deploy",name:"Deployment",col:"--p-deploy",speed:900,
-  story:"The stacer spring retracts into its housing so it does not interfere with docking. The winches brake the spring speed in about one minute. They then pay out tether at a slow exponential rate, L′ = λL. The gravity gradient pulls the halves apart. The brake only regulates the speed."},
+  story:"The spring tucks away. The winches slow the halves, then let Earth's gravity pull them slowly apart to 100 m."},
  {k:"hold",name:"Deployed",col:"--p-hold",speed:2400,
-  story:"At 100 m the winch holds the length. With libration damping on, it lengthens and shortens the tether by a few centimetres in phase with the swing. This damps the swing, much like slowing down a playground swing."},
+  story:"The winch holds 100 m. Small tugs on the tether calm its swing, like slowing a playground swing."},
  {k:"retrieve",name:"Retrieval",col:"--p-retr",speed:2400,
-  story:"The winches reel the tether in. As the tether shortens, the swing grows on its own. This is the opposite of what happens during deployment. Without damping, or if retrieval is too fast, the tether tumbles."},
+  story:"The winches reel the tether in. Shortening makes the swing grow, so without damping or when too fast, it tumbles."},
  {k:"dock",name:"Docking",col:"--p-dock",speed:10,
-  story:"Over the last metre the winch draws the halves together at 5 mm/s. Below 30 cm the magnetic coils pull and align the faces until they touch and the magnetic latch engages. The stacer spring is retracted. If it were still extended, it would push back with up to 0.5 N, and neither the winch nor the magnets could close the gap."},
+  story:"The winch pulls the halves together slowly. In the last 30 cm, magnets pull them shut and latch."},
 ];
 const PHI={};PH.forEach((p,i)=>PHI[p.k]=i);
 let C={};function readC(){const s=getComputedStyle(document.documentElement);["bg","panel","fg","muted","line","grid","bad","good","metal","metal-d","cable","mag"].forEach(k=>C[k]=s.getPropertyValue("--"+k).trim());PH.forEach(p=>C[p.k]=s.getPropertyValue(p.col).trim());C.mono=s.getPropertyValue("--f-mono").trim();C.disp=s.getPropertyValue("--f-display").trim();}
@@ -381,14 +381,14 @@ function draw(){
   $("clock").textContent=`t = ${fmtT(S.t)} · orbit ${dec(S.t/PER,2)}`;
   const L=val(RUN.L,S.t),Ld=val(RUN.Ld,S.t),phi=val(RUN.phi,S.t),T=val(RUN.T,S.t);
   const row=(k,v)=>`<tr><th>${k}</th><td>${v}</td></tr>`;
-  $("read").innerHTML=row("Centre-to-centre distance",L<10?dec(L,3)+" m":dec(L,1)+" m")+row("Speed L′",Math.abs(Ld)<0.01?dec(Ld*1000,2)+" mm/s":dec(Ld*100,2)+" cm/s")+
-    row("Libration φ",dec(phi*DEG,1)+"°")+row("Total tension",(T*1e3).toFixed(3)+" mN")+row("Equilibrium tension 3n²m_eq L",(3*N2*M*L*1e3).toFixed(3)+" mN")+
-    row("Turns per drum",dec(val(RUN.turns,S.t),0));
+  $("read").innerHTML=row("Separation",L<10?dec(L,3)+" m":dec(L,1)+" m")+row("Speed",Math.abs(Ld)<0.01?dec(Ld*1000,2)+" mm/s":dec(Ld*100,2)+" cm/s")+
+    row("Libration",dec(phi*DEG,1)+"°")+row("Tension",(T*1e3).toFixed(3)+" mN")+
+    row("Drum turns",dec(val(RUN.turns,S.t),0));
 }
 function result(){
   const R=RUN,el=$("result");const d=R.durations;
-  if(R.fail){el.className="result bad";el.innerHTML=`<b>Retrieval fails.</b> The tether tumbled (φ > 80°) at ${dec(R.fail.L,1)} m, ${fmtT(R.fail.t-R.phaseStart[3])} after retrieval started. ${P.damp?`Retrieving at λ = ${dec(P.lamr,2)} n is too fast. The swing grows faster than the winch can damp it.`:`Without damping, shortening the tether pumps the swing. The Coriolis term damps the swing during deployment but amplifies it during retrieval.`} Deployment did work: ${fmtT(d[1])} to reach 100 m, with a peak libration of ${dec(R.maxPhi[1],0)}°.`;}
-  else{el.className="result good";el.innerHTML=`<b>Full cycle complete.</b> The stacer spring gives ${dec(P.v0*100,0)} cm/s in ${dec(d[0],1)} s. The winch brakes this to 1 cm/s in ${dec(R.brakeT??0,0)} s and deploys 100 m in ${fmtT(d[1])}. Peak libration: ${dec(R.maxPhi[1],0)}° during deployment, ${dec(R.maxPhi[3],0)}° during retrieval. Retrieval takes ${fmtT(d[3])}, and the halves latch at ${dec(R.contactV*100,1)} cm/s. Tether slack events after the spring phase: ${R.slack}.`;}
+  if(R.fail){el.className="result bad";el.innerHTML=`<b>Retrieval fails.</b> The tether tumbled at ${dec(R.fail.L,1)} m, ${fmtT(R.fail.t-R.phaseStart[3])} into retrieval. ${P.damp?`Reeling in too fast.`:`Without damping, the swing grows.`}`;}
+  else{el.className="result good";el.innerHTML=`<b>Full cycle complete.</b> Out to 100 m in ${fmtT(d[1])}, back in ${fmtT(d[3])}, max swing ${dec(R.maxPhi[1],0)}° out, ${dec(R.maxPhi[3],0)}° in. Halves latch at ${dec(R.contactV*100,1)} cm/s.`;}
 }
 function readP(){P.v0=+$("v0").value;P.lamd=+$("lamd").value;P.lamr=+$("lamr").value;P.hold=+$("hold").value;P.damp=$("damp").checked;
   $("v0-o").textContent=dec(P.v0*100,0)+" cm/s";$("lamd-o").textContent=dec(P.lamd,2);$("lamr-o").textContent=dec(P.lamr,2);$("hold-o").textContent=dec(P.hold,1)+" orbits";}

@@ -79,7 +79,7 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;max-width:90ch}
 <header>
   <div class="eyebrow">CUBICS 2026 · Stream 1 · 2 × 3U joined by tethers · 550 km</div>
   <h1>Tethered dumbbell simulator</h1>
-  <p>Five interactive scenes built on the same model that <span class="mono">tests/test_reference.py</span> verifies: deployment with libration, the inertial view, the thermal transient at the terminator, the tension distribution across three tethers, and what the two cameras see. The equations are ported from <span class="mono">src/dumbbell.py</span> and the constants from <span class="mono">src/constants.py</span>.</p>
+  <p>Five interactive scenes showing how two CubeSat halves behave when joined by a tether.</p>
 </header>
 
 <nav class="tabs" role="tablist">
@@ -92,7 +92,7 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;max-width:90ch}
 
 <!-- ============ 1 DEPLOYMENT ============ -->
 <section class="scene" id="s-despliegue">
-  <p class="lede">The same initial conditions, integrated with two models. On the left, libration is frozen at φ = 0. This is the radial model of the reference table, <span class="mono">L = L₀ cosh(√3 n t)</span>. On the right, libration is free, as in the equations in CLAUDE.md. The Coriolis term <span class="mono">−2(L′/L)(φ′+n)</span> tilts the tether backwards as it lengthens.</p>
+  <p class="lede">Same start, two models. Left: the tether stays vertical. Right: it can swing (libration), and it tilts backwards as it unrolls.</p>
   <div class="grid">
     <div class="stage">
       <div class="pair">
@@ -108,40 +108,40 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;max-width:90ch}
     </div>
     <div class="side">
       <div class="box">
-        <h3>Winch law</h3>
+        <h3>Winch control</h3>
         <select id="d-preset" aria-label="Winch law preset">
-          <option value="grad">Gravity gradient only, T = 0</option>
-          <option value="claude" selected>Case 1: T = c·L′, c = 4×10⁻³</option>
-          <option value="stacer">Case 2: same, with a 0.2 m/s stacer</option>
-          <option value="fijo">L_cmd fixed at 100 m, k = 10⁻⁴</option>
-          <option value="exp">Exponential L_cmd, λ = 0.5 n</option>
+          <option value="grad">Gravity only, no winch</option>
+          <option value="claude" selected>Case 1: damping, c = 4×10⁻³</option>
+          <option value="stacer">Case 2: plus 0.2 m/s push</option>
+          <option value="fijo">Fixed target, 100 m</option>
+          <option value="exp">Exponential target, λ = 0.5 n</option>
         </select>
         <p style="font-size:12.5px;color:var(--muted);margin:10px 0 12px" class="mono">T = max(0, T₀ + c(L′ − L′cmd) + k(L − Lcmd))</p>
         <div class="ctl"><label for="d-c">c, damping</label><output id="d-c-o"></output><input type="range" id="d-c" min="0" max="100"></div>
-        <div class="ctl"><label for="d-k">k, loop stiffness</label><output id="d-k-o"></output><input type="range" id="d-k" min="0" max="100"></div>
-        <div class="ctl"><label for="d-lam">λ / n of the Lcmd profile (0 = fixed)</label><output id="d-lam-o"></output><input type="range" id="d-lam" min="0" max="1" step="0.01"></div>
-        <label class="chk"><input type="checkbox" id="d-ff"> T₀ = 3n²m_eq·Lcmd (feedforward)</label>
+        <div class="ctl"><label for="d-k">k, stiffness</label><output id="d-k-o"></output><input type="range" id="d-k" min="0" max="100"></div>
+        <div class="ctl"><label for="d-lam">Target growth λ / n</label><output id="d-lam-o"></output><input type="range" id="d-lam" min="0" max="1" step="0.01"></div>
+        <label class="chk"><input type="checkbox" id="d-ff"> Feedforward T₀</label>
         <div class="ctl" id="d-T0-row"><label for="d-T0">Manual T₀</label><output id="d-T0-o"></output><input type="range" id="d-T0" min="0" max="1.5e-3" step="1e-5"></div>
-        <div class="ctl"><label for="d-v0">Initial push L′(0)</label><output id="d-v0-o"></output><input type="range" id="d-v0" min="0" max="0.3" step="0.005"></div>
-        <div class="ctl"><label for="d-tmax">Simulated duration</label><output id="d-tmax-o"></output><input type="range" id="d-tmax" min="1" max="24" step="0.5"></div>
+        <div class="ctl"><label for="d-v0">Initial push</label><output id="d-v0-o"></output><input type="range" id="d-v0" min="0" max="0.3" step="0.005"></div>
+        <div class="ctl"><label for="d-tmax">Duration</label><output id="d-tmax-o"></output><input type="range" id="d-tmax" min="1" max="24" step="0.5"></div>
       </div>
       <div class="box">
-        <h3>Readouts at this instant</h3>
+        <h3>Now</h3>
         <table class="read" id="d-read"></table>
       </div>
     </div>
   </div>
   <div class="charts">
-    <div class="chart"><h4>Separation L [m]</h4><div class="legend"><span><i class="sw" style="background:var(--a)"></i>radial (φ ≡ 0)</span><span><i class="sw" style="background:var(--b)"></i>full</span></div><canvas id="d-chL"></canvas></div>
-    <div class="chart"><h4>Libration φ [°]</h4><div class="legend"><span><i class="sw" style="background:var(--a)"></i>radial</span><span><i class="sw" style="background:var(--b)"></i>full</span><span><i class="sw" style="background:var(--muted)"></i>steady-state φ*</span></div><canvas id="d-chP"></canvas></div>
-    <div class="chart"><h4>Total tension T [mN]</h4><div class="legend"><span><i class="sw" style="background:var(--a)"></i>radial</span><span><i class="sw" style="background:var(--b)"></i>full</span><span>▾ tether goes slack</span></div><canvas id="d-chT"></canvas></div>
+    <div class="chart"><h4>Length L [m]</h4><div class="legend"><span><i class="sw" style="background:var(--a)"></i>radial</span><span><i class="sw" style="background:var(--b)"></i>full</span></div><canvas id="d-chL"></canvas></div>
+    <div class="chart"><h4>Libration φ [°]</h4><div class="legend"><span><i class="sw" style="background:var(--a)"></i>radial</span><span><i class="sw" style="background:var(--b)"></i>full</span><span><i class="sw" style="background:var(--muted)"></i>steady φ*</span></div><canvas id="d-chP"></canvas></div>
+    <div class="chart"><h4>Tension T [mN]</h4><div class="legend"><span><i class="sw" style="background:var(--a)"></i>radial</span><span><i class="sw" style="background:var(--b)"></i>full</span><span>▾ slack</span></div><canvas id="d-chT"></canvas></div>
   </div>
   <div class="finding warn" id="d-finding"></div>
 </section>
 
 <!-- ============ 2 INERTIAL ============ -->
 <section class="scene" id="s-inercial" hidden>
-  <p class="lede">The dumbbell seen from an inertial frame. When it is aligned with the local vertical, the system rotates once per orbit, at rate <b>n</b>, and the gravity gradient holds it there at no cost. Any other spin rate needs angular momentum from the reaction wheels, plus a cyclic torque to keep the rate uniform. The tension each case requires is <span class="mono">T = m_eq L(ω² − n²(1 − 3cos²φ))</span>, with φ = (ω − n)t. If it comes out negative, the tether would have to push. The orange wedges are the cameras, pointed at nadir by the wheels of each half. With ω = n, the upper camera looks along the tether towards the lower half (scene 5).</p>
+  <p class="lede">Seen from space. Turning once per orbit (ω = n) keeps the tether vertical and taut for free. Any other spin costs wheel effort or lets the tether go slack.</p>
   <div class="grid">
     <div class="stage">
       <canvas id="i-cv" style="height:420px" aria-label="Inertial view of the orbit"></canvas>
@@ -152,7 +152,7 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;max-width:90ch}
     </div>
     <div class="side">
       <div class="box">
-        <h3>Inertial spin</h3>
+        <h3>Spin rate</h3>
         <div class="btnrow" style="margin-bottom:12px">
           <button class="b" data-w="0">ω = 0, fixed</button>
           <button class="b" data-w="1">ω = n, gradient</button>
@@ -162,21 +162,21 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;max-width:90ch}
         <div class="ctl"><label for="i-L">Separation L</label><output id="i-L-o"></output><input type="range" id="i-L" min="10" max="100" step="1" value="100"></div>
       </div>
       <div class="box">
-        <h3>Cost of the spin</h3>
+        <h3>Cost</h3>
         <table class="read" id="i-read"></table>
       </div>
     </div>
   </div>
   <div class="charts two">
-    <div class="chart"><h4>Required tension over one orbit [mN]</h4><div class="legend"><span><i class="sw" style="background:var(--a)"></i>required T</span><span><i class="sw" style="background:var(--muted)"></i>T_gg</span><span><i class="sw" style="background:var(--bad)"></i>T &lt; 0: impossible with tethers</span></div><canvas id="i-chT"></canvas></div>
-    <div class="chart"><h4>Torque on the dumbbell to keep ω uniform [mN·m]</h4><div class="legend"><span><i class="sw" style="background:var(--b)"></i>M = 3n²I sinφ cosφ</span><span><i class="sw" style="background:var(--muted)"></i>typical wheel, 1 mN·m</span></div><canvas id="i-chM"></canvas></div>
+    <div class="chart"><h4>Tension over one orbit [mN]</h4><div class="legend"><span><i class="sw" style="background:var(--a)"></i>needed T</span><span><i class="sw" style="background:var(--muted)"></i>T_gg</span><span><i class="sw" style="background:var(--bad)"></i>T &lt; 0: slack</span></div><canvas id="i-chT"></canvas></div>
+    <div class="chart"><h4>Torque needed [mN·m]</h4><div class="legend"><span><i class="sw" style="background:var(--b)"></i>torque M</span><span><i class="sw" style="background:var(--muted)"></i>one wheel</span></div><canvas id="i-chM"></canvas></div>
   </div>
   <div class="finding" id="i-finding"></div>
 </section>
 
 <!-- ============ 3 THERMAL ============ -->
 <section class="scene" id="s-termico" hidden>
-  <p class="lede">At 100 m, with the system in equilibrium, the natural length of the tether changes by δ(t) = δ_max(1 − e^{−(t−20)/τ}) as it crosses the terminator. With a tether stiffness of EA/L = 31.4 N/m, the working elastic stretch is only 23 µm, so a few millimetres of thermal drift are enough to make the tether go slack. In the top strip the winch is fixed. In the bottom strip it regulates tension with <span class="mono">ℓ′ = v_max · sat(G(T − T_ref)/T_ref)</span>. Displacements are exaggerated in the drawing and true to scale in the charts.</p>
+  <p class="lede">Entering or leaving sunlight changes the tether length by millimetres. The tether is stretched only 23 µm, so it goes slack. Top: fixed winch. Bottom: winch adjusts.</p>
   <div class="grid">
     <div class="stage">
       <canvas id="t-cv" style="height:300px" aria-label="Thermal transient"></canvas>
@@ -188,29 +188,29 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;max-width:90ch}
     </div>
     <div class="side">
       <div class="box">
-        <h3>Transient and winch</h3>
-        <div class="ctl"><label for="t-d">δ_max, change in natural length</label><output id="t-d-o"></output><input type="range" id="t-d" min="-0.15" max="0.15" step="0.005" value="0.12"></div>
-        <div class="ctl"><label for="t-tau">τ, time constant</label><output id="t-tau-o"></output><input type="range" id="t-tau" min="5" max="120" step="1" value="30"></div>
-        <label class="chk"><input type="checkbox" id="t-ks"> Series elastic element, k_s = 7×10⁻³ N/m</label>
-        <div class="ctl"><label for="t-v">Winch v_max</label><output id="t-v-o"></output><input type="range" id="t-v" min="0.0005" max="0.01" step="0.0005" value="0.004"></div>
-        <div class="ctl"><label for="t-g">Gain G</label><output id="t-g-o"></output><input type="range" id="t-g" min="0.5" max="10" step="0.5" value="2"></div>
+        <h3>Heat and winch</h3>
+        <div class="ctl"><label for="t-d">Length change δ_max</label><output id="t-d-o"></output><input type="range" id="t-d" min="-0.15" max="0.15" step="0.005" value="0.12"></div>
+        <div class="ctl"><label for="t-tau">Time constant τ</label><output id="t-tau-o"></output><input type="range" id="t-tau" min="5" max="120" step="1" value="30"></div>
+        <label class="chk"><input type="checkbox" id="t-ks"> Add a soft spring</label>
+        <div class="ctl"><label for="t-v">Winch speed</label><output id="t-v-o"></output><input type="range" id="t-v" min="0.0005" max="0.01" step="0.0005" value="0.004"></div>
+        <div class="ctl"><label for="t-g">Gain</label><output id="t-g-o"></output><input type="range" id="t-g" min="0.5" max="10" step="0.5" value="2"></div>
       </div>
       <div class="box">
-        <h3>Result over 600 s</h3>
+        <h3>Over 600 s</h3>
         <table class="read" id="t-read"></table>
       </div>
     </div>
   </div>
   <div class="charts two">
-    <div class="chart"><h4>T / T_ref, with T_ref = T_gg(100 m) = 0.719 mN</h4><div class="legend"><span><i class="sw" style="background:var(--b)"></i>fixed winch</span><span><i class="sw" style="background:var(--a)"></i>active compensation</span></div><canvas id="t-chT"></canvas></div>
-    <div class="chart"><h4>Lengths relative to equilibrium [mm]</h4><div class="legend"><span><i class="sw" style="background:var(--muted)"></i>thermal δ</span><span><i class="sw" style="background:var(--b)"></i>ΔL fixed</span><span><i class="sw" style="background:var(--a)"></i>ΔL compensated</span><span><i class="sw" style="background:var(--c3)"></i>Δℓ winch</span></div><canvas id="t-chL"></canvas></div>
+    <div class="chart"><h4>Tension / normal</h4><div class="legend"><span><i class="sw" style="background:var(--b)"></i>fixed winch</span><span><i class="sw" style="background:var(--a)"></i>active winch</span></div><canvas id="t-chT"></canvas></div>
+    <div class="chart"><h4>Length change [mm]</h4><div class="legend"><span><i class="sw" style="background:var(--muted)"></i>heat δ</span><span><i class="sw" style="background:var(--b)"></i>fixed</span><span><i class="sw" style="background:var(--a)"></i>active</span><span><i class="sw" style="background:var(--c3)"></i>winch</span></div><canvas id="t-chL"></canvas></div>
   </div>
   <div class="finding" id="t-finding"></div>
 </section>
 
 <!-- ============ 4 TETHERS ============ -->
 <section class="scene" id="s-cables" hidden>
-  <p class="lede">Three tethers between two 10 cm faces, 100 m apart. A relative rotation θ stretches some tethers and shortens others. The sum of the tensions is still set by the gravity gradient: two bodies joined only by tethers cannot pre-tension each other. This is why the torque the mechanism can apply is bounded by <span class="mono">T_gg·d_max</span>. The angle is exaggerated in the drawing.</p>
+  <p class="lede">Three tethers, 100 m long. Twisting one half loads some tethers and slackens others. Total tension is fixed by gravity, so the torque they give is tiny.</p>
   <div class="grid">
     <div class="stage">
       <canvas id="c-cv" style="height:380px" aria-label="Tension distribution across three tethers"></canvas>
@@ -221,31 +221,31 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;max-width:90ch}
     </div>
     <div class="side">
       <div class="box">
-        <h3>Geometry and perturbation</h3>
+        <h3>Layout and twist</h3>
         <select id="c-layout" aria-label="Anchor layout" style="margin-bottom:12px">
-          <option value="diag" selected>Centre and two corners, d = 70.7 mm</option>
+          <option value="diag" selected>Centre and two corners</option>
           <option value="tri">Triangle, r = 50 mm</option>
-          <option value="line">In a line across the face, ±50 mm</option>
+          <option value="line">In a line, ±50 mm</option>
         </select>
-        <div class="ctl"><label for="c-psi">Tilt direction ψ</label><output id="c-psi-o"></output><input type="range" id="c-psi" min="0" max="180" step="1" value="45"></div>
-        <div class="ctl"><label for="c-th">Relative rotation θ</label><output id="c-th-o"></output><input type="range" id="c-th" min="0" max="800" step="1" value="60"></div>
+        <div class="ctl"><label for="c-psi">Twist direction ψ</label><output id="c-psi-o"></output><input type="range" id="c-psi" min="0" max="180" step="1" value="45"></div>
+        <div class="ctl"><label for="c-th">Twist θ</label><output id="c-th-o"></output><input type="range" id="c-th" min="0" max="800" step="1" value="60"></div>
       </div>
       <div class="box">
-        <h3>Tensions and torque</h3>
+        <h3>Tensions</h3>
         <table class="read" id="c-read"></table>
       </div>
     </div>
   </div>
   <div class="charts two">
-    <div class="chart"><h4>Tension in each tether [mN]</h4><div class="legend"><span><i class="sw" style="background:var(--a)"></i>tether 1</span><span><i class="sw" style="background:var(--b)"></i>tether 2</span><span><i class="sw" style="background:var(--c3)"></i>tether 3</span></div><canvas id="c-chT"></canvas></div>
-    <div class="chart"><h4>Restoring torque M [µN·m]</h4><div class="legend"><span><i class="sw" style="background:var(--fg)"></i>M(θ)</span><span><i class="sw" style="background:var(--muted)"></i>limit T_gg·d_max</span></div><canvas id="c-chM"></canvas></div>
+    <div class="chart"><h4>Tension per tether [mN]</h4><div class="legend"><span><i class="sw" style="background:var(--a)"></i>tether 1</span><span><i class="sw" style="background:var(--b)"></i>tether 2</span><span><i class="sw" style="background:var(--c3)"></i>tether 3</span></div><canvas id="c-chT"></canvas></div>
+    <div class="chart"><h4>Torque M [µN·m]</h4><div class="legend"><span><i class="sw" style="background:var(--fg)"></i>M(θ)</span><span><i class="sw" style="background:var(--muted)"></i>limit</span></div><canvas id="c-chM"></canvas></div>
   </div>
   <div class="finding" id="c-finding"></div>
 </section>
 
 <!-- ============ 5 CAMERAS ============ -->
 <section class="scene" id="s-camaras" hidden>
-  <p class="lede">The two halves sit one above the other because only alignment with the local vertical produces tension. That alignment is a design requirement. Each half points its camera at nadir with its own wheels, so both cameras see the Earth. The lower camera has a clear view. <b>The upper camera looks down along the tether and sees the lower half 100 m away</b>, in the centre of the image, with the tethers converging on it. The side view exaggerates the angles. The simulated image uses the true angles.</p>
+  <p class="lede">The halves stack vertically, both cameras looking down (nadir). <b>The upper camera sees the lower half</b> in the middle of its image.</p>
   <div class="grid">
     <div class="stage">
       <div class="pair">
@@ -261,18 +261,18 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;max-width:90ch}
     </div>
     <div class="side">
       <div class="box">
-        <h3>Camera and geometry</h3>
-        <div class="ctl"><label for="k-sw">Ground swath width</label><output id="k-sw-o"></output><input type="range" id="k-sw" min="1" max="50" step="0.5" value="5"></div>
-        <div class="ctl"><label for="k-tilt">Forward tilt of the upper camera</label><output id="k-tilt-o"></output><input type="range" id="k-tilt" min="0" max="2" step="0.01" value="0"></div>
-        <div class="ctl"><label for="k-amp">Residual libration amplitude</label><output id="k-amp-o"></output><input type="range" id="k-amp" min="0" max="1" step="0.01" value="0.15"></div>
+        <h3>Camera</h3>
+        <div class="ctl"><label for="k-sw">Ground width</label><output id="k-sw-o"></output><input type="range" id="k-sw" min="1" max="50" step="0.5" value="5"></div>
+        <div class="ctl"><label for="k-tilt">Upper camera tilt</label><output id="k-tilt-o"></output><input type="range" id="k-tilt" min="0" max="2" step="0.01" value="0"></div>
+        <div class="ctl"><label for="k-amp">Libration</label><output id="k-amp-o"></output><input type="range" id="k-amp" min="0" max="1" step="0.01" value="0.15"></div>
         <div class="ctl"><label for="k-L">Separation L</label><output id="k-L-o"></output><input type="range" id="k-L" min="10" max="100" step="1" value="100"></div>
         <select id="k-orient" aria-label="Orientation of the lower half">
-          <option value="v" selected>3U long axis along the tether: 10 × 10 cm face</option>
-          <option value="h">3U long axis horizontal: 10 × 34 cm face</option>
+          <option value="v" selected>Lower half upright, 10 × 10 cm</option>
+          <option value="h">Lower half flat, 10 × 34 cm</option>
         </select>
       </div>
       <div class="box">
-        <h3>What the upper camera sees</h3>
+        <h3>Upper camera view</h3>
         <table class="read" id="k-read"></table>
       </div>
     </div>
@@ -280,7 +280,7 @@ footer{margin-top:36px;color:var(--muted);font-size:13px;max-width:90ch}
   <div class="finding" id="k-finding"></div>
 </section>
 
-<footer>Model of two point masses in a circular orbit at 550 km, with a massless tether, m = 4 kg per half and m_eq = 2 kg. Fixed-step RK4 integration in the browser: 2 s for deployment, 2 ms for the thermal transient with a rigid tether, and 20 ms with the series element. Reference values and discrepancies with CLAUDE.md are listed in the README of the <span class="mono">cubesats_proposal</span> repository.</footer>
+<footer>Simple model: two 4 kg masses at 550 km, joined by a massless tether. Computed live in your browser.</footer>
 </div>
 
 <script>
@@ -416,10 +416,10 @@ function dRecompute(reset){
 }
 function dFinding(){
   const{A,B}=D.runs,p=D.p,lam=p.lam;
-  const tA=A.t99!==null?fmtT(A.t99):"not reached",tB=B.t99!==null?fmtT(B.t99):"not reached in "+String(p.tmax)+" h";
-  let s=`<b>Time to reach 99 m:</b> radial ${tA}, full ${tB}. <b>Maximum libration</b> in the full model: ${dec(B.phmax*DEG,3)}°. <b>Slack events:</b> radial ${A.slack.length}, full ${B.slack.length}. `;
-  if(lam>0){const r=4*lam/3;s+=r<1?`With λ = ${dec(lam,2)} n, the steady-state angle is φ* = −½ asin(4λ/3n) = ${dec(-0.5*Math.asin(r)*DEG,3)}°. Above λ = 0.75 n this equilibrium does not exist and the tether tips over.`:`With λ = ${dec(lam,2)} n > 0.75 n, there is no steady-state angle: the tether tips over towards the horizontal.`;}
-  else s+="Without a length profile, the full model has no control over libration. The gravity gradient sets the deployment rate, which grows with L, and the Coriolis term tips the tether over. Try the exponential profile with λ ≤ 0.75 n.";
+  const tA=A.t99!==null?fmtT(A.t99):"not reached",tB=B.t99!==null?fmtT(B.t99):"not in "+String(p.tmax)+" h";
+  let s=`<b>Reach 99 m:</b> radial ${tA}, full ${tB}. Max swing ${dec(B.phmax*DEG,3)}°, slack events ${A.slack.length} / ${B.slack.length}. `;
+  if(lam>0){const r=4*lam/3;s+=r<1?`Steady tilt ${dec(-0.5*Math.asin(r)*DEG,3)}°.`:`Above λ = 0.75 n the tether tips over.`;}
+  else s+="Without a target profile the tether tips over. Try the exponential one.";
   const el=$("d-finding");el.innerHTML=s;el.className="finding "+(B.t99!==null&&B.phmax*DEG<45?"good":"warn");
 }
 function dIdx(run){const i=Math.floor(D.t/D.dt);return isFinite(i)?Math.max(0,Math.min(run.t.length-1,i)):0;}
@@ -430,7 +430,7 @@ function drawDumbbell(cv,run,col,title){
   // local vertical + earth
   g.strokeStyle=C.line;g.setLineDash([3,4]);g.beginPath();g.moveTo(cx,26);g.lineTo(cx,h-30);g.stroke();g.setLineDash([]);
   g.fillStyle=C.muted;g.font="11px "+C.mono;g.textAlign="center";g.fillText("↓ Earth",cx,h-24);g.textAlign="right";g.fillText("flight →",w-8,h-24);
-  if(!isFinite(L)){g.textAlign="center";g.fillStyle=C.muted;g.fillText(run.collided?"the two halves collided":"L > 150 m: simulation stopped",cx,cy);return;}
+  if(!isFinite(L)){g.textAlign="center";g.fillStyle=C.muted;g.fillText(run.collided?"halves collided":"L > 150 m: stopped",cx,cy);return;}
   const half=Math.max(L/2,0.6);const s=Math.min(w*0.42,h*0.36)/half;
   // trail of upper body
   g.strokeStyle=col;g.globalAlpha=.25;g.lineWidth=1;g.beginPath();
@@ -449,7 +449,7 @@ function drawDumbbell(cv,run,col,title){
 }
 function dDraw(){
   const{A,B}=D.runs;
-  drawDumbbell($("d-cvA"),A,C.a,"Radial, φ ≡ 0");drawDumbbell($("d-cvB"),B,C.b,"Full in-plane");
+  drawDumbbell($("d-cvA"),A,C.a,"Radial");drawDumbbell($("d-cvB"),B,C.b,"Full");
   const tend=A.t[A.t.length-1];$("d-scrub").value=Math.round(D.t/tend*1000);$("d-clock").textContent="t = "+fmtT(D.t);
   const th=A.t.map(v=>v/3600),cur=D.t/3600;
   chart($("d-chL"),{xs:th,series:[{ys:A.L,color:C.a},{ys:B.L,color:C.b}],cursorX:cur,xLabel:"t [h]",yMin:0});
@@ -461,7 +461,7 @@ function dDraw(){
   const row=(k,a,b)=>`<tr><th>${k}</th><td>${a}</td><td>${b}</td></tr>`;
   $("d-read").innerHTML=`<thead><tr><th></th><th><i class="sw" style="background:var(--a)"></i>radial</th><th><i class="sw" style="background:var(--b)"></i>full</th></tr></thead>`+
     row("L [m]",dec(A.L[iA],4),dec(B.L[iB],4))+row("L′ [m/s]",sci(A.Ld[iA],3),sci(B.Ld[iB],3))+row("φ [°]",dec(A.ph[iA]*DEG,3),dec(B.ph[iB]*DEG,3))+
-    row("T [N]",sci(A.T[iA],3),sci(B.T[iB],3))+row("T_gg(L) [N]",sci(TGG(A.L[iA]),3),sci(TGG(B.L[iB]),3))+row("slack events",cnt(A),cnt(B));
+    row("T [N]",sci(A.T[iA],3),sci(B.T[iB],3))+row("T_gg [N]",sci(TGG(A.L[iA]),3),sci(TGG(B.L[iB]),3))+row("slack events",cnt(A),cnt(B));
 }
 function dAdvance(dtr){if(!D.playing)return;const tend=D.runs.A.t[D.runs.A.t.length-1];D.t+=dtr*tend/25*(+$("d-speed").value);if(D.t>=tend){D.t=tend;D.playing=false;$("d-play").textContent="Play";}}
 ["d-c","d-k","d-lam","d-ff","d-T0","d-v0","d-tmax"].forEach(id=>$(id).addEventListener("input",()=>{dReadParams();clearTimeout(D.tm);D.tm=setTimeout(()=>dRecompute(false),60);}));
@@ -479,7 +479,7 @@ function iDraw(){
   g.fillStyle=C.grid;g.strokeStyle=C.line;g.beginPath();g.arc(cx,cy,Rp,0,7);g.fill();g.stroke();
   g.fillStyle=C.muted;g.font="12px "+C.mono;g.textAlign="center";g.textBaseline="middle";g.fillText("Earth",cx,cy);
   g.setLineDash([2,5]);g.beginPath();g.arc(cx,cy,Ro,0,7);g.stroke();g.setLineDash([]);
-  g.textAlign="left";g.textBaseline="top";g.fillText("altitude and tether length not to scale",10,8);
+  g.textAlign="left";g.textBaseline="top";g.fillText("not to scale",10,8);
   const th=N*I.t,al=w*I.t,phi=al-th;const sx=cx+Ro*Math.cos(th),sy=cy-Ro*Math.sin(th);
   g.strokeStyle=C.line;g.setLineDash([3,4]);g.beginPath();g.moveTo(cx,cy);g.lineTo(cx+(Ro+70)*Math.cos(th),cy-(Ro+70)*Math.sin(th));g.stroke();g.setLineDash([]);
   // reference ghosts every 1/8 orbit with the same rule, for the inertial pattern
@@ -490,7 +490,7 @@ function iDraw(){
   else{g.strokeStyle=C.bad;g.lineWidth=1.5;g.setLineDash([5,4]);g.beginPath();g.moveTo(ax,ay);g.quadraticCurveTo(sx+10*Math.sin(al),sy+10*Math.cos(al),bx,by);g.stroke();g.setLineDash([]);}
   for(const[x,y]of[[ax,ay],[bx,by]]){const dn=Math.atan2(cy-y,cx-x);g.fillStyle=C.b;g.globalAlpha=.28;g.beginPath();g.moveTo(x,y);g.lineTo(x+34*Math.cos(dn-0.16),y+34*Math.sin(dn-0.16));g.lineTo(x+34*Math.cos(dn+0.16),y+34*Math.sin(dn+0.16));g.closePath();g.fill();g.globalAlpha=1;}
   for(const[x,y]of[[ax,ay],[bx,by]]){g.save();g.translate(x,y);g.rotate(-al);g.fillStyle=C.panel;g.strokeStyle=C.fg;g.lineWidth=1.5;g.fillRect(-7,-7,14,14);g.strokeRect(-7,-7,14,14);g.restore();}
-  $("i-clock").textContent=`t = ${fmtT(I.t%PER)} · orbital period ${dec(PER/60,3)} min · φ = ${dec(((phi%(2*Math.PI))+3*Math.PI)%(2*Math.PI)*DEG-180,3)}°`;
+  $("i-clock").textContent=`t = ${fmtT(I.t%PER)} · orbit ${dec(PER/60,3)} min · φ = ${dec(((phi%(2*Math.PI))+3*Math.PI)%(2*Math.PI)*DEG-180,3)}°`;
   // charts over one orbit
   const n=361,ts=new Float64Array(n),Ts=new Float64Array(n),Ms=new Float64Array(n);const Iner=MEQ*L*L;
   let Tmin=Infinity,Tmax=-Infinity,Mmax=0;
@@ -500,12 +500,12 @@ function iDraw(){
   chart($("i-chM"),{xs:ts,series:[{ys:Ms,color:C.b}],cursorX:cur,xLabel:"t [min]",hlines:[{y:1,color:C.muted},{y:-1,color:C.muted}]});
   const Hin=Iner*w,Hw=Iner*Math.abs(w-N);
   const row=(k,v)=>`<tr><th>${k}</th><td>${v}</td></tr>`;
-  $("i-read").innerHTML=row("I = m_eq L²",sci(Iner,3)+" kg·m²")+row("Inertial H = Iω",sci(Hin,3)+" N·m·s")+row("H on wheels = I|ω − n|",sci(Hw,3)+" N·m·s")+
-    row("vs. 4 wheels, 0.4 N·m·s",Hw>0?"×"+dec(Hw/0.4,3):"free")+row("T min / max",sci(Tmin/1e3,3)+" / "+sci(Tmax/1e3,3)+" N")+row("max cyclic torque",sci(Mmax/1e3,3)+" N·m");
+  $("i-read").innerHTML=row("Inertia I",sci(Iner,3)+" kg·m²")+row("Momentum H",sci(Hin,3)+" N·m·s")+row("Wheel momentum",sci(Hw,3)+" N·m·s")+
+    row("vs. 4 wheels",Hw>0?"×"+dec(Hw/0.4,3):"free")+row("T min / max",sci(Tmin/1e3,3)+" / "+sci(Tmax/1e3,3)+" N")+row("Max torque",sci(Mmax/1e3,3)+" N·m");
   const wn=w/N;let s;
-  if(Math.abs(wn-1)<0.005)s=`<b>ω = n.</b> The dumbbell follows the local vertical, φ = 0 at all times, and T = 3n²m_eq L = ${sci(TGG(L),3)} N is constant. The wheels need to supply no angular momentum and no torque. This is the only configuration that gives tension for free.`;
-  else if(Tmin<0)s=`<b>The tether goes slack</b> during part of the orbit (the required T drops as low as ${sci(Tmin/1e3,3)} N). With the dumbbell fixed in space, or spinning slowly, the tension changes sign when |φ| > 54.7°.`;
-  else s=`<b>Tension is always positive, but costly:</b> holding ω = ${dec(wn,3)} n requires ${sci(Hw,3)} N·m·s in the wheels, ${dec(Hw/0.4,3)} times what four high-end wheels can store. It also requires a cyclic torque of up to ${sci(Mmax/1e3,3)} N·m, ${dec(Mmax,3)} times the torque of one wheel.`;
+  if(Math.abs(wn-1)<0.005)s=`<b>ω = n: free tension.</b> The tether stays vertical with a steady ${sci(TGG(L),3)} N. The wheels do nothing.`;
+  else if(Tmin<0)s=`<b>The tether goes slack</b> for part of the orbit. Needed T drops to ${sci(Tmin/1e3,3)} N.`;
+  else s=`<b>Taut, but costly.</b> The wheels need ${dec(Hw/0.4,3)}× their momentum and ${dec(Mmax,3)}× the torque of one wheel.`;
   const el=$("i-finding");el.innerHTML=s;el.className="finding "+(Math.abs(wn-1)<0.005?"good":"warn");
 }
 function iAdvance(dtr){if(I.playing)I.t+=dtr*PER/14;}
@@ -549,18 +549,18 @@ function drawStrip(g,y0,hh,W,r,col,label){
   const ang=-r.dl[i]/1e3/0.005;g.beginPath();g.arc(34,cy,11,0,7);g.stroke();g.beginPath();g.moveTo(34,cy);g.lineTo(34+11*Math.cos(ang),cy+11*Math.sin(ang));g.stroke();
   // reference mark of equilibrium position
   g.strokeStyle=C.line;g.setLineDash([3,3]);g.beginPath();g.moveTo(base,cy-26);g.lineTo(base,cy+26);g.stroke();g.setLineDash([]);
-  g.fillStyle=C.muted;g.font="10px "+C.mono;g.textAlign="center";g.fillText("equilibrium",base,cy+28);
+  g.fillStyle=C.muted;g.font="10px "+C.mono;g.textAlign="center";g.fillText("rest",base,cy+28);
   const T=r.Tr[i];const x1=52,x2=xb-12;
   if(T>0){g.strokeStyle=col;g.lineWidth=Math.min(6,1.2+1.4*Math.log10(1+9*T));g.beginPath();g.moveTo(x1,cy);g.lineTo(x2,cy);g.stroke();}
   else{const amp=Math.min(22,4+Math.max(0,r.sl[i])*1e3*0.8);g.strokeStyle=C.bad;g.lineWidth=1.4;g.beginPath();for(let k=0;k<=80;k++){const xx=x1+(x2-x1)*k/80;const yy=cy+amp*Math.sin(k/80*Math.PI*5)*Math.sin(k/80*Math.PI);k?g.lineTo(xx,yy):g.moveTo(xx,yy);}g.stroke();}
   g.fillStyle=C.panel;g.strokeStyle=C.fg;g.lineWidth=1.5;g.fillRect(xb-12,cy-14,24,28);g.strokeRect(xb-12,cy-14,24,28);
   g.fillStyle=T>0?C.fg:C.bad;g.font="12px "+C.mono;g.textAlign="right";g.textBaseline="top";
-  g.fillText(T>0?`T/T_ref = ${dec(T,3)}`:"tether slack",W-10,y0+4);
+  g.fillText(T>0?`T/T_ref = ${dec(T,3)}`:"slack",W-10,y0+4);
 }
 function tDraw(){
   const{F,A}=TH.runs;const cv=$("t-cv");const{g,w,h}=fit(cv);
   drawStrip(g,0,h/2,w,F,C.b,"Fixed winch");g.strokeStyle=C.line;g.beginPath();g.moveTo(0,h/2);g.lineTo(w,h/2);g.stroke();
-  drawStrip(g,h/2,h/2,w,A,C.a,"Active compensation");
+  drawStrip(g,h/2,h/2,w,A,C.a,"Active winch");
   $("t-clock").textContent="t = "+dec(TH.t,4)+" s";$("t-scrub").value=Math.round(TH.t/TH.tmax*1000);
   const tmax=Math.max(...F.Tr,...A.Tr);
   chart($("t-chT"),{xs:F.t,series:[{ys:F.Tr,color:C.b,width:1.3},{ys:A.Tr,color:C.a}],cursorX:TH.t,xLabel:"t [s]",yMin:0,yMax:Math.max(2,tmax*1.05),hlines:[{y:1,color:C.muted}],
@@ -569,13 +569,13 @@ function tDraw(){
   const i=tIdx(F);const row=(k,a,b)=>`<tr><th>${k}</th><td>${a}</td><td>${b}</td></tr>`;
   const cnt=r=>r.slackT.filter(x=>x<=TH.t).length;
   $("t-read").innerHTML=`<thead><tr><th></th><th><i class="sw" style="background:var(--b)"></i>fixed</th><th><i class="sw" style="background:var(--a)"></i>active</th></tr></thead>`+
-    row("slack events up to t",cnt(F),cnt(A))+row("slack events, 600 s",F.nsl,A.nsl)+row("time slack",dec(F.tsl,3)+" s",dec(A.tsl,3)+" s")+row("T max / T_ref",dec(F.Tmax/TREF,3),dec(A.Tmax/TREF,3))+
-    row("effective stiffness",sci(F.ke,3)+" N/m",sci(A.ke,3)+" N/m")+row("T/T_ref at t",dec(F.Tr[i],3),dec(A.Tr[tIdx(A)],3));
+    row("slack so far",cnt(F),cnt(A))+row("slack, 600 s",F.nsl,A.nsl)+row("time slack",dec(F.tsl,3)+" s",dec(A.tsl,3)+" s")+row("peak T / T_ref",dec(F.Tmax/TREF,3),dec(A.Tmax/TREF,3))+
+    row("stiffness",sci(F.ke,3)+" N/m",sci(A.ke,3)+" N/m")+row("T / T_ref now",dec(F.Tr[i],3),dec(A.Tr[tIdx(A)],3));
 }
 function tFinding(){const{F,A}=TH.runs;const el=$("t-finding");
-  let s=`<b>Fixed winch:</b> ${F.nsl} slack events, ${dec(F.tsl,3)} s with the tether slack, and peaks of ${dec(F.Tmax/TREF,3)} times the working tension when it snaps taut again. <b>Active compensation:</b> ${A.nsl} slack events, with a peak of ${dec(A.Tmax/TREF,3)} T_ref. `;
+  let s=`<b>Fixed winch: ${F.nsl} slack events</b>, peaks ${dec(F.Tmax/TREF,3)}× normal. Active winch: ${A.nsl} slack events, peak ${dec(A.Tmax/TREF,3)}×. `;
   const need=Math.abs(+$("t-d").value)/(+$("t-tau").value);
-  s+=`The initial drift rate is δ_max/τ = ${dec(need*1e3,3)} mm/s. Either the winch must be able to follow it, or the series elastic element must absorb it.`;
+  s+=`The winch must follow ${dec(need*1e3,3)} mm/s, or a spring must absorb it.`;
   el.innerHTML=s;el.className="finding "+(A.nsl===0?"good":"warn");}
 function tAdvance(dtr){if(!TH.playing)return;TH.t+=dtr*20;if(TH.t>=TH.tmax){TH.t=TH.tmax;TH.playing=false;$("t-play").textContent="Play";}}
 ["t-d","t-tau","t-ks","t-v","t-g"].forEach(id=>$(id).addEventListener("input",()=>{tParams();clearTimeout(TH.tm);TH.tm=setTimeout(tRecompute,80);}));
@@ -612,7 +612,7 @@ function cDraw(){
     g.fillStyle=C.fg;g.font="12px "+C.mono;g.textAlign="left";g.textBaseline="middle";const mid=[(pa[0]+pb[0])/2,(pa[1]+pb[1])/2];g.fillText(String(i+1),mid[0]+8,mid[1]);});
   face(sq.map(([x,y])=>[x,y,0]),hgt,C.panel);
   g.fillStyle=C.muted;g.font="11px "+C.mono;g.textAlign="left";g.textBaseline="top";
-  g.fillText("face of B, the upper half (100 m above, distance shortened)",10,8);g.textBaseline="bottom";g.fillText("face of A, the lower half, rotated by θ (exaggerated) about the dashed axis",10,h-8);
+  g.fillText("upper half (100 m above)",10,8);g.textBaseline="bottom";g.fillText("lower half, twisted by θ (exaggerated)",10,h-8);
   $("c-clock").textContent=`θ / θ_slack = ${isFinite(ths)?dec(th/ths,3):"—"}`;
   // charts vs theta
   const thMax=(isFinite(ths)?ths*4:8e-4);const n=241,xs=new Float64Array(n),Ts=[0,1,2].map(()=>new Float64Array(n)),Ms=new Float64Array(n);
@@ -621,11 +621,11 @@ function cDraw(){
   chart($("c-chM"),{xs,series:[{ys:Ms,color:C.fg}],cursorX:th*1e6,xLabel:"θ [µrad]",yMin:Math.min(0,...Ms),hlines:[{y:TG*dmax*1e6,color:C.muted},{y:-TG*dmax*1e6,color:C.muted,fit:false}]});
   const Ktheta=KC*lv.reduce((a,l)=>a+l*l,0);
   const row=(k,v)=>`<tr><th>${k}</th><td>${v}</td></tr>`;
-  $("c-read").innerHTML=T.map((t,i)=>row(`<i class="sw" style="background:${cols[i]}"></i>tether ${i+1}, lever arm ${dec(lv[i]*1e3,3)} mm`,sci(t,3)+" N")).join("")+
-    row("ΣT (set by the gradient)",sci(T.reduce((a,b)=>a+b,0),3)+" N")+row("torque M",sci(M,3)+" N·m")+row("torsional stiffness K_θ",sci(Ktheta,3)+" N·m/rad")+
-    row("first tether slack at",isFinite(ths)?sci(ths,3)+" rad = "+dec(ths*DEG,2)+"°":"never")+row("limit T_gg·d_max",sci(TG*dmax,3)+" N·m")+row("vs. one wheel, 1 mN·m",dec(TG*dmax/1e-3*100,3)+"%");
+  $("c-read").innerHTML=T.map((t,i)=>row(`<i class="sw" style="background:${cols[i]}"></i>tether ${i+1}, arm ${dec(lv[i]*1e3,3)} mm`,sci(t,3)+" N")).join("")+
+    row("total T",sci(T.reduce((a,b)=>a+b,0),3)+" N")+row("torque M",sci(M,3)+" N·m")+row("twist stiffness",sci(Ktheta,3)+" N·m/rad")+
+    row("first slack at",isFinite(ths)?sci(ths,3)+" rad = "+dec(ths*DEG,2)+"°":"never")+row("torque limit",sci(TG*dmax,3)+" N·m")+row("vs. one wheel",dec(TG*dmax/1e-3*100,3)+"%");
   const el=$("c-finding");
-  el.innerHTML=`The first tether goes slack after only <b>${isFinite(ths)?dec(ths*DEG,2)+"°":"—"}</b> of relative rotation. Beyond that point, the tension concentrates in the tether with the longest lever arm, and the torque saturates at T_gg·d_max = ${sci(TG*dmax,3)} N·m, which is ${dec(TG*dmax/1e-3*100,3)}% of a reaction wheel. The mechanism adds passive torsional stiffness and helps the wheels. It cannot control the relative attitude.`;
+  el.innerHTML=`<b>A tether goes slack after ${isFinite(ths)?dec(ths*DEG,2)+"°":"—"} of twist.</b> Max torque is ${sci(TG*dmax,3)} N·m, ${dec(TG*dmax/1e-3*100,3)}% of one wheel: it helps, but cannot steer.`;
 }
 function cAdvance(dtr){if(!CB.sweep)return;const el=$("c-th");let v=+el.value+CB.dir*dtr*160;if(v>=+el.max){v=+el.max;CB.dir=-1;}if(v<=0){v=0;CB.dir=1;}el.value=v;cDraw();}
 ["c-layout","c-psi","c-th"].forEach(id=>$(id).addEventListener("input",cDraw));
@@ -672,7 +672,7 @@ function kDraw(){
   g.restore();
   g.strokeStyle=C.fg;g.lineWidth=1;g.strokeRect(ox+.5,oy+.5,S,S);
   g.fillStyle=C.muted;g.font="11px "+C.mono;g.textAlign="left";g.textBaseline="top";
-  g.fillText(`upper camera · ${dec(q.sw/1e3,3)} km · ↑ flight · + nadir`,ox,oy+S+6);
+  g.fillText(`upper camera · ${dec(q.sw/1e3,3)} km`,ox,oy+S+6);
   // occlusion fraction
   const ix0=Math.max(-0.5,(cAng/q.fov)-q.sa/2/q.L/q.fov),ix1=Math.min(0.5,(cAng/q.fov)+q.sa/2/q.L/q.fov);
   const occA=Math.max(0,ix1-ix0)*Math.min(1,q.sc/q.L/q.fov);
@@ -682,8 +682,8 @@ function kDraw(){
   const xC=W/2,yU=54,Lpx=Hh*0.42,yG=Hh-36;
   const vis=a=>Math.atan(Math.tan(a)*E);
   const xL=xC+Lpx*Math.tan(vis(q.phi)),yL=yU+Lpx;
-  G.fillStyle=C.grid;G.fillRect(0,yG,W,Hh-yG);G.fillStyle=C.muted;G.font="11px "+C.mono;G.textAlign="left";G.textBaseline="top";G.fillText("surface, 550 km below",8,yG+6);
-  G.textBaseline="top";G.fillText(`angles exaggerated ×${dec(E,3)}`,8,8);
+  G.fillStyle=C.grid;G.fillRect(0,yG,W,Hh-yG);G.fillStyle=C.muted;G.font="11px "+C.mono;G.textAlign="left";G.textBaseline="top";G.fillText("Earth, 550 km below",8,yG+6);
+  G.textBaseline="top";G.fillText(`angles ×${dec(E,3)}`,8,8);
   const cone=(x,y,ang,col,alpha)=>{const half=11/DEG;const d=yG-y;G.fillStyle=col;G.globalAlpha=alpha;G.beginPath();G.moveTo(x,y);G.lineTo(x+d*Math.tan(-ang-half)*-1,yG);G.lineTo(x+d*Math.tan(-ang+half)*-1,yG);G.closePath();G.fill();G.globalAlpha=1;};
   const tv=vis(q.tilt);
   // upper camera cone, tilted forward (to the right = flight direction)
@@ -701,19 +701,15 @@ function kDraw(){
   const tmin=q.fov/2+q.sa/2/q.L+q.amp;
   const row=(k,v)=>`<tr><th>${k}</th><td>${v}</td></tr>`;
   const inView=occA>0;
-  $("k-read").innerHTML=row("field of view",dec(q.fov*DEG,3)+"° = "+dec(q.fov*1e3,3)+" mrad")+row("IFOV at 5 m GSD",dec(GSD/HALT*1e6,3)+" µrad")+
-    row("lower half, angular size",dec(q.sc/q.L*1e3,3)+" × "+dec(q.sa/q.L*1e3,3)+" mrad")+row("in 5 m pixels",Math.round(q.sc/q.L/(GSD/HALT))+" × "+Math.round(q.sa/q.L/(GSD/HALT))+" px")+
-    row("image area blocked now",dec(occA*100,3)+"%")+row("φ at this instant",dec(q.phi*DEG,3)+"°")+
-    row("minimum tilt for a clear view",dec(tmin*DEG,3)+"°")+row("tethers visible from",dec(0.05/(q.fov/2),3)+" m from the camera")+
-    row("stereo B/H, radial baseline",q.tilt>0?sci(q.L*Math.sin(q.tilt)/HALT,2):"0 at nadir");
-  $("k-clock").textContent=`libration ${dec(q.phi*DEG,3)}° · period ${dec(q.Plib/60,3)} min · ground motion slowed`;
+  $("k-read").innerHTML=row("field of view",dec(q.fov*DEG,3)+"° = "+dec(q.fov*1e3,3)+" mrad")+row("pixel, 5 m",dec(GSD/HALT*1e6,3)+" µrad")+
+    row("lower half size",dec(q.sc/q.L*1e3,3)+" × "+dec(q.sa/q.L*1e3,3)+" mrad")+row("in pixels",Math.round(q.sc/q.L/(GSD/HALT))+" × "+Math.round(q.sa/q.L/(GSD/HALT))+" px")+
+    row("image blocked",dec(occA*100,3)+"%")+row("libration now",dec(q.phi*DEG,3)+"°")+
+    row("tilt for clear view",dec(tmin*DEG,3)+"°")+row("tethers visible from",dec(0.05/(q.fov/2),3)+" m from the camera")+
+    row("stereo B/H",q.tilt>0?sci(q.L*Math.sin(q.tilt)/HALT,2):"0 at nadir");
+  $("k-clock").textContent=`libration ${dec(q.phi*DEG,3)}° · period ${dec(q.Plib/60,3)} min`;
   const el=$("k-finding");
-  el.innerHTML=(inView?`<b>The upper camera sees the lower half</b>, which now covers ${dec(occA*100,3)}% of the image. The three tethers enter the field of view from ${dec(0.05/(q.fov/2),3)} m onwards. `:`<b>The lower half is outside the field of view</b> at this instant. `)+
-    `With a residual libration of ±${dec(q.amp*DEG,3)}°, the upper camera must be tilted by at least ${dec(tmin*DEG,3)}° so that the lower half never appears. There are three options. `+
-    `<b>(1)</b> Tilt the upper camera by that angle. The lower camera stays at nadir. `+
-    `<b>(2)</b> Make use of it. With the lower half in the image, one pixel corresponds to ${dec(GSD/HALT*1e6,3)} µrad of libration, about ${dec(2*Math.PI/4096/(GSD/HALT),3)} times finer than a 12-bit encoder. This measures the tether direction with no extra hardware. `+
-    `<b>(3)</b> Use only the lower camera to image the Earth. `+
-    `In every case, the baseline between the two cameras is radial and almost parallel to the line of sight. The base-to-height ratio is B/H ≈ ${sci(q.L*Math.sin(Math.max(q.tilt,1/DEG))/HALT,2)} even at 1° from nadir, which rules out stereo imaging.`;
+  el.innerHTML=(inView?`<b>The lower half blocks ${dec(occA*100,3)}% of the upper image.</b> `:`<b>The lower half is out of view now.</b> `)+
+    `Tilt the upper camera ${dec(tmin*DEG,3)}° to always avoid it. Stereo is not possible (B/H ≈ ${sci(q.L*Math.sin(Math.max(q.tilt,1/DEG))/HALT,2)}).`;
   el.className="finding "+(inView?"warn":"good");
 }
 function kAdvance(dtr){if(!K.playing)return;const q=kParams();K.t+=dtr*q.Plib/10;K.ground+=dtr*0.05;}
