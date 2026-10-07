@@ -1,0 +1,511 @@
+\documentclass[aspectratio=169,11pt]{beamer}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta,calc,decorations.pathmorphing}
+
+% ---------- black and white style ----------
+\usetheme{default}
+\setbeamercolor{normal text}{fg=black,bg=white}
+\setbeamercolor{structure}{fg=black}
+\setbeamercolor{frametitle}{fg=black,bg=white}
+\setbeamercolor{title}{fg=black}
+\setbeamercolor{subtitle}{fg=black!70}
+\setbeamercolor{alerted text}{fg=black}
+\setbeamerfont{alerted text}{series=\bfseries}
+\setbeamercolor{block title}{fg=white,bg=black}
+\setbeamercolor{block body}{fg=black,bg=black!6}
+\setbeamerfont{frametitle}{size=\Large,series=\bfseries}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{itemize items}[circle]
+\setbeamertemplate{blocks}[rounded][shadow=false]
+\setbeamertemplate{frametitle}{\vspace{0.35cm}\insertframetitle\par\vspace{-0.1cm}}
+\setbeamertemplate{footline}{%
+  \hspace{0.5cm}\textcolor{black!55}{\scriptsize CUBICS 2026 \textperiodcentered{} Tethered 6U \textperiodcentered{} Team meeting}%
+  \hfill\textcolor{black!55}{\scriptsize\insertframenumber}\hspace{0.5cm}\vspace{0.25cm}}
+\setlength{\abovedisplayskip}{4pt}
+\setlength{\belowdisplayskip}{4pt}
+
+\newcommand{\meq}{m_{\mathrm{eq}}}
+
+\title{Tethered 6U CubeSat}
+\subtitle{Tether range, relative attitude, state of the art and 3D imaging}
+\date{CUBICS 2026 \textperiodcentered{} Stream 1 \textperiodcentered{} Team meeting, October 2026}
+\author{}
+
+\begin{document}
+
+% =====================================================================
+\begin{frame}[plain]
+  \vfill
+  {\Huge\bfseries Tethered 6U CubeSat\par}
+  \vspace{0.3cm}
+  {\Large Tether range, relative attitude, state of the art and 3D imaging\par}
+  \vspace{0.6cm}
+  {\normalsize\color{black!65} CUBICS 2026 \textperiodcentered{} Stream 1 \textperiodcentered{} Team meeting, October 2026\par}
+  \vspace{0.4cm}
+  {\small\color{black!65} One tether, two 3U halves of 4\,kg, circular orbit at 550\,km.\par}
+  \vfill
+\end{frame}
+
+% =====================================================================
+\begin{frame}{Four answers for today}
+\renewcommand{\arraystretch}{1.5}
+\begin{tabular}{@{}>{\bfseries}p{3.0cm}p{10.4cm}@{}}
+\toprule
+Tether range & Vertical only. 500\,m to 1\,km is feasible: 3.6 to 7.2\,mN of tension, about 3.5\,h to deploy. \\
+Relative attitude & IMUs alone drift. A star tracker and a GNSS receiver on each half; the stowed zero only calibrates. \\
+State of the art & Tethers have flown since 1966. Most failures happen during deployment. \\
+3D photos & Not with a 0.5 to 1\,km tether baseline: height errors near 1\,km. Yes with fore/aft camera pointing: about 3.5\,m. \\
+Lifetime & Reel the tether in when not in use: about 6 years instead of 1.6 years at 550\,km. \\
+\bottomrule
+\end{tabular}
+\end{frame}
+
+% =====================================================================
+\section{Tether range}
+
+\begin{frame}{The tether is held taut by the gravity gradient}
+\begin{columns}[T]
+\begin{column}{0.56\textwidth}
+\small
+Circular orbit of radius $a = R_\oplus + h$:
+\begin{equation*}
+n = \sqrt{\frac{\mu}{a^{3}}} = 1.0948\times10^{-3}\ \mathrm{rad/s},\qquad P = \frac{2\pi}{n} = 95.6\ \mathrm{min}.
+\end{equation*}
+A body forced to turn at rate $n$ at radius $a+l$ lacks
+\begin{equation*}
+n^{2}(a+l) - \frac{\mu}{(a+l)^{2}} \simeq 3\,n^{2}\,l
+\end{equation*}
+of inward acceleration. The tether supplies it:
+\begin{equation*}
+T = 3\,n^{2}\,\meq\,L,\qquad \meq = \frac{m_1 m_2}{m_1+m_2} = 2\ \mathrm{kg}.
+\end{equation*}
+\vspace{0.1cm}
+\textbf{$T = 3.6$\,mN (500\,m) \quad $T = 7.2$\,mN (1\,km)}
+\end{column}
+\begin{column}{0.4\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.82,>=Latex]
+  \fill[black!15] (-2.6,-3.55) .. controls (0,-3.05) .. (2.6,-3.55) -- (2.6,-3.9) -- (-2.6,-3.9) -- cycle;
+  \node at (0,-3.65) {\small Earth};
+  \draw[dashed,black!50] (0,-2.9) -- (0,3.05);
+  \node[black!60,font=\scriptsize,anchor=west] at (0.1,3.0) {local vertical};
+  \draw[thick,fill=black!25] (-0.3,1.75) rectangle (0.3,2.65);
+  \draw[thick,fill=white] (-0.3,-2.45) rectangle (0.3,-1.55);
+  \draw[thick] (0,1.75) -- (0,-1.55);
+  \fill (0,0.1) circle (1.6pt);
+  \node[font=\scriptsize,anchor=west] at (0.08,0.1) {CM};
+  \node[font=\small,anchor=west] at (0.45,2.2) {Half B};
+  \node[font=\small,anchor=west] at (0.45,-2.0) {Half A};
+  \draw[->,very thick] (-1.0,2.2) -- (-1.0,2.95);
+  \draw[->,very thick] (-1.0,-2.0) -- (-1.0,-2.75);
+  \node[font=\scriptsize,align=right,anchor=east] at (-1.1,2.55) {gradient\\ pulls out};
+  \node[font=\scriptsize,align=right,anchor=east] at (-1.1,-2.35) {gradient\\ pulls in};
+  \draw[<->] (1.85,1.75) -- (1.85,-1.55);
+  \node[font=\small,anchor=west,align=left] at (1.95,0.1) {$L$\\[-2pt]\scriptsize 0.5--1\,km};
+  \draw[->] (1.2,-2.95) -- (2.3,-2.95);
+  \node[font=\scriptsize] at (1.75,-2.75) {flight};
+\end{tikzpicture}
+\end{column}
+\end{columns}
+\end{frame}
+
+% =====================================================================
+\begin{frame}{Only the vertical direction separates the two halves}
+\small
+Relative motion in the orbiting frame ($x$ radial, $y$ along track, $z$ out of plane):
+\begin{equation*}
+\ddot{x} - 2n\dot{y} - 3n^{2}x = f_x,\qquad
+\ddot{y} + 2n\dot{x} = f_y,\qquad
+\ddot{z} + n^{2}z = f_z .
+\end{equation*}
+\vspace{-0.2cm}
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Direction & Free motion & Tether \\
+\midrule
+Radial ($x$) & $+3n^{2}x$: the halves move apart & taut \\
+Along track ($y$) & no restoring or separating term & slack \\
+Out of plane ($z$) & $-n^{2}z$: the halves move together & slack \\
+\bottomrule
+\end{tabular}
+\end{center}
+A tilt $\varphi$ from the vertical swings back (constant $L$):
+\begin{equation*}
+\ddot{\varphi} + 3n^{2}\sin\varphi\cos\varphi = 0
+\;\Rightarrow\;
+\omega_{\mathrm{lib}} = \sqrt{3}\,n,\quad 2\pi/\omega_{\mathrm{lib}} = 55.2\ \mathrm{min}.
+\end{equation*}
+\alert{A diagonal tether is a swing, not a configuration.} Holding $\varphi = 30^\circ$ at 1\,km needs
+$3n^{2}\meq L^{2}\sin\varphi\cos\varphi = 3.1$\,N\,m, about 3000 times a CubeSat reaction wheel.
+\end{frame}
+
+% =====================================================================
+\begin{frame}{500 m to 1 km with one tether: the key numbers}
+\centering
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+Quantity & Expression & $L = 500$\,m & $L = 1$\,km \\
+\midrule
+Tension & $3n^{2}\meq L$ & 3.6\,mN & 7.2\,mN \\
+Elastic stretch & $TL/(EA)$ & 0.6\,mm & 2.3\,mm \\
+Thermal length change, $\Delta\theta = 100$\,K & $|\alpha|\,L\,\Delta\theta$ & 0.15 to 0.5\,m & 0.3 to 1.0\,m \\
+Tether mass, $\varnothing$ 0.2\,mm & $\rho_c A L$ & 22\,g & 44\,g \\
+Tether frontal area & $d\,L$ & 0.10\,m$^{2}$ & 0.20\,m$^{2}$ \\
+Controlled deployment, $\lambda = n/2$ & $\ln(L/L_0)/\lambda$ & 3.2\,h & 3.5\,h \\
+Controlled retrieval, $\lambda = n/5$ & $\ln(L/L_0)/\lambda$ & 7.9\,h & 8.8\,h \\
+Orbit life at 550\,km, deployed & drag model & $\approx 2.5$\,yr & $\approx 1.6$\,yr \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.25cm}
+{\footnotesize\color{black!65} $EA = 3142$\,N, $\alpha \approx -10^{-5}$/K (polyethylene) to $-3\times10^{-6}$/K (aramid), $L_0 = 1$\,m, mean solar activity. Stowed: $\approx 6$\,yr.}
+\end{frame}
+
+% =====================================================================
+\begin{frame}{Deployment has to be slow}
+\begin{columns}[T]
+\begin{column}{0.52\textwidth}
+In-plane dynamics with tether length $L$ and tilt $\varphi$:
+\begin{align*}
+\ddot{L} &= L\big[(\dot{\varphi}+n)^{2} - n^{2}(1-3\cos^{2}\varphi)\big] - \frac{T}{\meq},\\
+\ddot{\varphi} &= -2\,\frac{\dot{L}}{L}\,(\dot{\varphi}+n) - 3n^{2}\sin\varphi\cos\varphi .
+\end{align*}
+The term $-2\dot{L}/L$ (Coriolis) tilts the tether while it pays out.
+\end{column}
+\begin{column}{0.45\textwidth}
+\textbf{Free, no brake} ($T=0$, $\varphi\equiv0$):
+\begin{equation*}
+L(t) = L_0\cosh\!\big(\sqrt{3}\,n\,t\big)
+\end{equation*}
+75 to 81\,min, but ends at 0.95 to 1.9\,m/s and the tether tips over.
+
+\vspace{0.2cm}
+\textbf{Controlled}, $L = L_0\,e^{\lambda t}$:
+\begin{equation*}
+\sin 2\varphi^{*} = -\frac{4\lambda}{3n},\qquad \lambda \le \tfrac{3}{4}\,n .
+\end{equation*}
+With $\lambda = n/2$: $\varphi^{*} = -20.9^\circ$ and 3.2 to 3.5\,h.
+\end{column}
+\end{columns}
+\end{frame}
+
+% =====================================================================
+\begin{frame}{Once deployed, the length stays fixed}
+The winch sets $L$. More tension does not lengthen the tether; it only pulls it tighter.
+\vspace{0.3cm}
+\begin{columns}[T]
+\begin{column}{0.31\textwidth}
+\begin{block}{Elastic stretch}
+\centering
+$\Delta L_{\mathrm{el}} = \dfrac{T\,L}{EA}$\\[4pt]
+{\Large\bfseries $\le$ 2.3\,mm}\\[2pt]
+\footnotesize at 1\,km and full tension
+\end{block}
+\end{column}
+\begin{column}{0.31\textwidth}
+\begin{block}{Thermal change}
+\centering
+$\Delta L_{\mathrm{th}} = |\alpha|\,L\,\Delta\theta$\\[4pt]
+{\Large\bfseries up to 1\,m}\\[2pt]
+\footnotesize sun to shadow; the winch compensates
+\end{block}
+\end{column}
+\begin{column}{0.31\textwidth}
+\begin{block}{Natural swing}
+\centering
+$2\pi/(\sqrt{3}\,n)$\\[4pt]
+{\Large\bfseries 55\,min}\\[2pt]
+\footnotesize period around the vertical
+\end{block}
+\end{column}
+\end{columns}
+\vspace{0.4cm}
+The tension is fixed by the length: $T = 3n^{2}\meq L$. Paying out faster only adds swing and braking load.
+\end{frame}
+
+% =====================================================================
+\section{Relative attitude}
+
+\begin{frame}{Relative attitude: IMUs alone are not enough}
+\begin{columns}[T]
+\begin{column}{0.48\textwidth}
+\small
+\textbf{Why the stowed zero is lost}
+\begin{itemize}
+\item Gyros integrate the rate, so a bias $b$ grows:
+$\delta\theta(t) \simeq b\,t$.
+\item $b = 1^\circ$/h gives $1.6^\circ$ after one orbit.
+\item Accelerometers cannot sense attitude in free fall.
+\item One tether does not stop the halves from turning about its own axis.
+\end{itemize}
+\end{column}
+\begin{column}{0.48\textwidth}
+\small
+\textbf{What to fly on each half}
+\begin{itemize}
+\item \textbf{Star tracker}: absolute attitude, $\approx 0.005^\circ$.
+\begin{equation*}
+R_{AB} = R_A^{\top}R_B
+\end{equation*}
+\item \textbf{GNSS}: tether direction from the baseline
+\begin{equation*}
+\hat{u} = \frac{\mathbf{r}_B - \mathbf{r}_A}{\lVert\mathbf{r}_B - \mathbf{r}_A\rVert},\quad \delta\hat{u} \approx \frac{\delta r}{L} \approx 10^{-5}\ \mathrm{rad}
+\end{equation*}
+\item \textbf{Tether encoder} at each anchor; \textbf{IMU} for fast rates.
+\end{itemize}
+\end{column}
+\end{columns}
+\vspace{0.2cm}
+\vspace{0.05cm}
+{\small\textbf{Stowed zero:} calibrates the mounting offset between the halves only.}
+\end{frame}
+
+% =====================================================================
+\section{State of the art}
+
+\begin{frame}{Tether heritage: deployment is the main risk}
+\centering
+\renewcommand{\arraystretch}{1.18}
+\begin{tabular}{@{}llll@{}}
+\toprule
+Mission & Year & Length & Result \\
+\midrule
+Gemini XI & 1966 & 30\,m & First tether between two spacecraft \\
+SEDS-1 & 1993 & 20\,km & Full deployment; end mass deorbited \\
+SEDS-2 & 1994 & 19.7\,km & Closed-loop braking law validated \\
+TSS-1R & 1996 & 19.7\,km & \textbf{Tether broke by an electrical arc} \\
+TiPS & 1996 & 4\,km & Libration damped from $40^\circ$ to $7.5^\circ$ \\
+ATEx & 1999 & 22\,m of 6.2\,km & \textbf{Tether went slack after a thermal transient} \\
+YES2 & 2007 & 31.7\,km & Longest structure deployed in orbit \\
+TEPCE & 2019 & 1\,km & Two CubeSat halves split by a stacer spring at 4\,m/s \\
+\bottomrule
+\end{tabular}
+\end{frame}
+
+% =====================================================================
+\begin{frame}{Previous tethered systems}
+\centering
+\begin{tabular}{@{}cc@{}}
+\includegraphics[height=2.75cm]{figs/prior1.png} &
+\includegraphics[height=2.75cm]{figs/prior2.png} \\[-2pt]
+\footnotesize Two CubeSats joined by a tether &
+\footnotesize Two end bodies joined by a tether \\[6pt]
+\includegraphics[height=2.2cm]{figs/prior3.png} &
+\includegraphics[height=2.2cm]{figs/prior4.png} \\[-2pt]
+\footnotesize Tether between a spacecraft and a target &
+\footnotesize Momentum exchange: catch and toss \\
+\end{tabular}
+\end{frame}
+
+% =====================================================================
+\begin{frame}{Where our proposal fits}
+\begin{columns}[T]
+\begin{column}{0.47\textwidth}
+\begin{block}{Already demonstrated}
+\begin{itemize}
+\item Splitting a CubeSat in two with a spring (TEPCE, 2019)
+\item Kilometre-class deployment with braking (SEDS-2, TiPS)
+\item Gravity-gradient stabilisation along the vertical
+\item Libration damping with the winch
+\end{itemize}
+\end{block}
+\end{column}
+\begin{column}{0.47\textwidth}
+\begin{block}{New in this proposal}
+\begin{itemize}
+\item Active thermal compensation of the tether length (the ATEx failure)
+\item Tether direction measured at the anchor
+\item Tether reeled in between campaigns to extend the mission
+\item Earth imaging from both halves
+\end{itemize}
+\end{block}
+\end{column}
+\end{columns}
+\end{frame}
+
+% =====================================================================
+\section{3D imaging}
+
+\begin{frame}{3D needs two very different viewing angles}
+\begin{columns}[c]
+\begin{column}{0.55\textwidth}
+\centering
+\begin{tikzpicture}[scale=0.8,>=Latex]
+  % left: tether baseline
+  \begin{scope}
+    \fill[black!12] (-2,-0.4) rectangle (2,0);
+    \draw[thick,fill=black!35] (-0.6,0) -- (0,0.85) -- (0.6,0) -- cycle;
+    \draw[thick,fill=white] (-0.14,4.0) rectangle (0.0,4.25);
+    \draw[thick,fill=white] (0.02,4.0) rectangle (0.16,4.25);
+    \draw[thick] (-0.07,4.0) -- (0,0.85);
+    \draw[thick] (0.09,4.0) -- (0,0.85);
+    \node[font=\footnotesize,align=center] at (0,4.85) {baseline 1\,km};
+    \node[font=\footnotesize] at (0,-0.75) {$0.1^\circ$ between views};
+  \end{scope}
+  % right: fore/aft
+  \begin{scope}[xshift=4.6cm]
+    \fill[black!12] (-2,-0.4) rectangle (2,0);
+    \draw[thick,fill=black!35] (-0.6,0) -- (0,0.85) -- (0.6,0) -- cycle;
+    \draw[thick,fill=white] (-1.5,4.0) rectangle (-1.25,4.25);
+    \draw[thick,fill=white] (1.25,4.0) rectangle (1.5,4.25);
+    \draw[thick] (-1.37,4.0) -- (0,0.85);
+    \draw[thick] (1.37,4.0) -- (0,0.85);
+    \node[font=\footnotesize,align=center] at (0,4.85) {baseline 234\,km};
+    \node[font=\footnotesize] at (0,-0.75) {$24^\circ$ between views};
+  \end{scope}
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.42\textwidth}
+A point of height $h$ shifts between the photos by
+\begin{equation*}
+p = h\,\frac{B}{H},
+\end{equation*}
+so the height error is
+\begin{equation*}
+\sigma_h = \frac{\sigma_p}{B/H}.
+\end{equation*}
+$B$ baseline, $H = 550$\,km, $\sigma_p$ matching error
+(0.3 pixel $=$ 1.5\,m with 5\,m pixels).
+\end{column}
+\end{columns}
+\end{frame}
+
+% =====================================================================
+\begin{frame}{A 0.5 to 1 km baseline gives height errors near 1 km}
+\begin{columns}[c]
+\begin{column}{0.6\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{loglogaxis}[
+  width=8.6cm, height=6.1cm,
+  xlabel={baseline $B$ [km]}, ylabel={height error $\sigma_h$ [m]},
+  xmin=0.1, xmax=1000, ymin=1, ymax=30000,
+  axis lines=left, tick label style={font=\footnotesize}, label style={font=\footnotesize},
+  legend style={font=\scriptsize, draw=none, fill=black!8, at={(0.03,0.03)}, anchor=south west},
+  every axis plot/.append style={black}]
+  \fill[black!8] (axis cs:0.1,1) rectangle (axis cs:1000,100);
+  \addplot[very thick,domain=0.1:1000,samples=2]{825/x};
+  \addlegendentry{5\,m pixels}
+  \addplot[very thick,dashed,domain=0.1:1000,samples=2]{3300/x};
+  \addlegendentry{20\,m pixels}
+  \draw[dotted,thick] (axis cs:0.5,1) -- (axis cs:0.5,30000);
+  \draw[dotted,thick] (axis cs:1,1) -- (axis cs:1,30000);
+  \draw[dotted,thick] (axis cs:234,1) -- (axis cs:234,30000);
+  \node[font=\scriptsize,anchor=west,fill=black!8,inner sep=1pt] at (axis cs:0.12,50) {useful for relief: $\sigma_h \le 100$\,m};
+  \node[font=\scriptsize,anchor=east] at (axis cs:0.48,22000) {500\,m};
+  \node[font=\scriptsize,anchor=west] at (axis cs:1.05,22000) {1\,km};
+  \node[font=\scriptsize,anchor=west] at (axis cs:250,5000) {fore/aft};
+\end{loglogaxis}
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.37\textwidth}
+Tether baseline, even if horizontal: $B/H = L/H$.
+\begin{itemize}
+\item 1\,km: $\sigma_h \approx$ \textbf{825\,m}
+\item 500\,m: $\sigma_h \approx$ \textbf{1.65\,km}
+\item A 1\,km mountain shifts \textbf{0.36 pixel}.
+\end{itemize}
+\vspace{0.1cm}
+A vertical tether gives no stereo at all: both cameras look along the same line.
+\end{column}
+\end{columns}
+\end{frame}
+
+% =====================================================================
+\begin{frame}{What works: pointing the cameras}
+\centering
+\renewcommand{\arraystretch}{1.35}
+\small
+\begin{tabular}{@{}lccl@{}}
+\toprule
+Option & $B/H$ & $\sigma_h$ (5\,m / 20\,m pixels) & Notes \\
+\midrule
+Fixed, A $+12^\circ$ / B $-12^\circ$ & 0.43 & 3.5\,m / 14\,m & Sites under the track \\
+Gimbal $\pm30^\circ$ & 0.40 & 3.8\,m / 15\,m & Chosen sites, 2--4 days \\
+Tether baseline, 1\,km & $1.8\times10^{-3}$ & 825\,m / 3.3\,km & \textbf{Not usable} \\
+\bottomrule
+\end{tabular}
+
+\vspace{0.5cm}
+\begin{block}{}
+\centering The 3D comes from the satellite moving 234\,km along its orbit in 31\,s, not from the tether.
+\end{block}
+\end{frame}
+
+% =====================================================================
+\section{Risks and next steps}
+
+\begin{frame}{Keep the tether stowed when it is not in use}
+\begin{columns}[c]
+\begin{column}{0.55\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+  width=8.2cm, height=5.8cm,
+  xlabel={deployed tether length [m]}, ylabel={orbit life at 550\,km [years]},
+  xmin=0, xmax=1000, ymin=0, ymax=21,
+  axis lines=left, tick label style={font=\footnotesize}, label style={font=\footnotesize},
+  legend style={font=\scriptsize, draw=none, fill=none, at={(0.98,0.98)}, anchor=north east},
+  every axis plot/.append style={black, thick}]
+  \addplot[dashed] coordinates {(0,20.2) (100,15.7) (250,11.8) (500,8.3) (750,6.4) (1000,5.3)};
+  \addlegendentry{quiet Sun}
+  \addplot[very thick,mark=*,mark size=1.6pt] coordinates {(0,6.1) (100,4.7) (250,3.6) (500,2.5) (750,1.9) (1000,1.6)};
+  \addlegendentry{mean Sun}
+  \addplot[dotted] coordinates {(0,2.0) (100,1.6) (250,1.2) (500,0.8) (750,0.65) (1000,0.5)};
+  \addlegendentry{active Sun}
+\end{axis}
+\end{tikzpicture}
+\end{column}
+\begin{column}{0.42\textwidth}
+Drag decay of the orbit radius:
+\begin{equation*}
+\dot{a} = -\rho\,C_D\,\frac{A}{m}\,\sqrt{\mu a},\qquad A = A_{\mathrm{sat}} + d\,L .
+\end{equation*}
+A 1\,km tether of 0.2\,mm adds 0.20\,m$^{2}$, three times the satellites.
+\begin{itemize}
+\item \textbf{Reel in between campaigns}: about 6\,yr instead of 1.6\,yr.
+\item \textbf{Deploy at end of life} to reenter faster: at 590\,km, 3\,yr instead of 11.5\,yr.
+\end{itemize}
+\end{column}
+\end{columns}
+\end{frame}
+
+% =====================================================================
+\begin{frame}{Other risks}
+\renewcommand{\arraystretch}{1.45}
+\begin{tabular}{@{}>{\bfseries}p{3.0cm}p{10.4cm}@{}}
+\toprule
+Retrieval & Reeling in amplifies the swing ($-2\dot{L}/L > 0$). It needs libration control and a slow rate: 7.9 to 8.8\,h. \\
+Thermal length & Up to 1\,m per orbit at 1\,km. The winch needs that range and closed-loop control. \\
+Single tether & One cut by a small debris particle ends the mission. Use a braided or multi-strand line. \\
+Debris and admissibility & A 1\,km object has a larger collision cross-section. Confirm with the CSA. \\
+Model accuracy & Orbit lives come from a simple drag model; a formal STELA or DRAMA study is needed. \\
+\bottomrule
+\end{tabular}
+\end{frame}
+
+% =====================================================================
+\begin{frame}{Decisions for the team}
+\renewcommand{\arraystretch}{1.6}
+\begin{tabular}{@{}>{\bfseries}l p{12.3cm}@{}}
+1 & \textbf{Tether length}: 500\,m or 1\,km, with the tether stowed between campaigns. \\
+2 & \textbf{Attitude sensors}: star tracker and GNSS on each half; IMU and encoder as support. \\
+3 & \textbf{Imaging claim}: drop tether stereo; use fore/aft or gimbal cameras for 3D. \\
+4 & \textbf{Questions to the CSA by 9 November}: launch altitude, tether admissibility, deorbit case. \\
+5 & \textbf{Analysis}: formal orbit-life study and a thermal model of the tether. \\
+\end{tabular}
+\end{frame}
+
+\end{document}
